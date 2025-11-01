@@ -421,6 +421,28 @@ void factory_rst()
 void check_counter()
 {
   static bool wasStable = false;
+  // Reference setpoint for timer resets on setpoint changes (>1.0°C)
+  static float sp_ref_for_timer = NAN;
+
+  // Initialize reference on first call
+  if (isnan(sp_ref_for_timer))
+  {
+    sp_ref_for_timer = Setpoint;
+  }
+
+  // Reset timer if setpoint changed significantly (> 1.0°C)
+  if (fabs(Setpoint - sp_ref_for_timer) > 1.0f)
+  {
+    timer_active = false;
+    chronostart = 0;
+    h = m = s = 0;
+    lcd.setCursor(0, 3);
+    lcd.print(F("00:00:00"));
+    wasStable = false;
+    stabilityStartTime = millis();
+    sp_ref_for_timer = Setpoint; // update reference only when we reset
+    return;
+  }
 
   // Vérifie si l'écart entre température et consigne est trop grand
   if (abs(temperature - Setpoint) > 2.0)
@@ -431,6 +453,7 @@ void check_counter()
     lcd.setCursor(0, 3);
     lcd.print(F("00:00:00"));
     wasStable = false;
+    stabilityStartTime = millis();
     return;
   }
 
