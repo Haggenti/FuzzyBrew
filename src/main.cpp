@@ -108,7 +108,7 @@ uint8_t encbutton_state;
 unsigned long buttontick = 0;
 const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
 const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "RESET ADAPT", "BACK", NULL};
-const char *menu3[] = {"START", "BACK", "EXIT", NULL};
+// const char *menu3[] = {"START", "BACK", "EXIT", NULL}; // Unused
 const char *confirm_menu[] = {"YES", "NO", NULL};
 
 // ==================== TIMER VARIABLES ====================
@@ -517,9 +517,9 @@ void ssr_mgmt()
   {
     lcd.setCursor(5, 1);
     print_space(6);
-    lcd.setCursor(5, 1);
-    lcd.print(pwm, 1);
-    lcd.print(F("%"));
+  lcd.setCursor(5, 1);
+  lcd.print(pwm, 1);
+  lcd.print(F("%"));
     old_pwm = pwm;
     onPWM_PERIOD = (pwm * PWM_PERIOD) / 100; // Calcul direct du temps ON
   }
@@ -600,7 +600,7 @@ void restore_disp_man()
   lcd.setCursor(0, 1);
   lcd.print(F("PWM: "));
   lcd.print(pwm, 1);
-  lcd.print("%");
+  lcd.print(F("%"));
   lcd.setCursor(0, 3);
   lcd.print(F("00:00:00"));
   lcd.setCursor(0, 0);
@@ -1242,7 +1242,9 @@ void set_m()
   lcd.setCursor(0, 1);
   lcd.print(F("Setpoint zone"));
   lcd.setCursor(0, 2);
-  lcd.print("if " + String(OVERSHOOT_X) + "<\x01<");
+  lcd.print(F("if "));
+  lcd.print(OVERSHOOT_X);
+  lcd.print(F("<\x01<"));
   lcd.print(NEAR_LIMIT, 1);
   lcd.setCursor(0, 3);
   lcd.print(F("PWM offset="));
@@ -1257,7 +1259,9 @@ void set_m()
   lcd.setCursor(0, 1);
   lcd.print(F("Ramp zone"));
   lcd.setCursor(0, 2);
-  lcd.print("if " + String(NEAR_LIMIT) + "<\x01<");
+  lcd.print(F("if "));
+  lcd.print(NEAR_LIMIT);
+  lcd.print(F("<\x01<"));
   lcd.print(FAR_LIMIT, 0);
   lcd.setCursor(0, 3);
   lcd.print(F("Ramp PWM"));
