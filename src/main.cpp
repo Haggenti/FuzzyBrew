@@ -84,6 +84,20 @@ float MAINT_A = 0.01455f; // Coefficient A for maintenance power
 float MAINT_B = 0.08593f; // Coefficient B for maintenance power
 float MAINT_C = 6.8386f;  // Coefficient C for maintenance power
 
+// ==================== ADAPTIVE MAINTENANCE CORRECTION ====================
+// Per-temperature-band correction (approx. per 10°C from ~40°C to ~110°C)
+float pwm_corr[8] = {0};
+bool adaptive_enable = true; // can be toggled in settings
+inline uint8_t band_index_for_setpoint(float sp)
+{
+  int idx = int((sp + 5.0f) / 10.0f) - 3; // 35–45 -> 0, 45–55 -> 1, ...
+  if (idx < 0)
+    idx = 0;
+  if (idx > 7)
+    idx = 7;
+  return (uint8_t)idx;
+}
+
 // ==================== MENU & UI SETTINGS ====================
 uint8_t menu_select = 0;
 uint8_t encbutton_state;
@@ -159,6 +173,14 @@ void writeEEPROM()
   EEPROM.put(address, MAINT_B);
   address += sizeof(MAINT_B);
   EEPROM.put(address, MAINT_C);
+  address += sizeof(MAINT_C);
+  // Save adaptive settings
+  for (int i = 0; i < 8; i++)
+  {
+    EEPROM.put(address, pwm_corr[i]);
+    address += sizeof(pwm_corr[i]);
+  }
+  EEPROM.put(address, adaptive_enable);
 }
 
 void readEEPROM()
@@ -185,6 +207,16 @@ void readEEPROM()
   EEPROM.get(address, MAINT_B);
   address += sizeof(MAINT_B);
   EEPROM.get(address, MAINT_C);
+  address += sizeof(MAINT_C);
+  // Read adaptive settings (sanitize if EEPROM not yet initialized)
+  for (int i = 0; i < 8; i++)
+  {
+    EEPROM.get(address, pwm_corr[i]);
+    address += sizeof(pwm_corr[i]);
+    if (isnan(pwm_corr[i]) || pwm_corr[i] < -30.0f || pwm_corr[i] > 30.0f)
+      pwm_corr[i] = 0.0f;
+  }
+  EEPROM.get(address, adaptive_enable);
 }
 
 struct TempFilter
@@ -380,6 +412,9 @@ void factory_rst()
   MAINT_A = 0.01455f;
   MAINT_B = 0.08593f;
   MAINT_C = 6.8386f;
+  for (int i = 0; i < 8; i++)
+    pwm_corr[i] = 0.0f;
+  adaptive_enable = true;
   delay(1000);
   lcd.print(F("OK!"));
 }
@@ -430,6 +465,11 @@ void ssr_mgmt()
     digitalWrite(SSR, LOW);
     black();
   }
+  // Clamp PWM for safety before using it to compute timing
+  if (pwm < 0)
+    pwm = 0;
+  if (pwm > 100)
+    pwm = 100;
   // Mise à jour de l'affichage PWM uniquement si changement
   if (old_pwm != pwm)
   {
@@ -495,13 +535,17 @@ void setpoint_mgmt()
     lcd.setCursor(5, 0);
     lcd.print(Setpoint, 1);
     print_deg();
+
+    // Update feedforward power based on Setpoint (not temperature)
+    calculated_power = calc_maintain_pow(Setpoint);
   }
 
   delta = Setpoint - temperature;
   if (old_delta != delta)
   {
-
-    PWM_N = PWM_NEAR_OFFSET + calculated_power;
+    // Apply adaptive correction per temperature band
+    uint8_t bi = band_index_for_setpoint(Setpoint);
+    PWM_N = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
   }
   old_delta = delta;
 
@@ -695,7 +739,7 @@ void read_temp()
           tm.displayFloat(temperature, 1);
           prev_temp = temperature;
           delta = Setpoint - temperature;
-          calculated_power = calc_maintain_pow(temperature);
+          // Feedforward power is now computed on Setpoint (see setpoint_mgmt)
         }
       }
       querry_temp = false;
@@ -944,6 +988,8 @@ void setup(void)
   strip.show();
   black();
   readEEPROM();
+  // Initialize feedforward based on current Setpoint
+  calculated_power = calc_maintain_pow(Setpoint);
 }
 
 void manual_mode()
@@ -963,6 +1009,50 @@ void manual_mode()
     else
     {
       setpoint_mgmt();
+    }
+
+    // ==================== Adaptive learning (BREW only) ====================
+    if (adaptive_enable && !error && !test_mode)
+    {
+      static bool learnStable = false;
+      static unsigned long learnStart = 0;
+
+      float absDelta = fabs(Setpoint - temperature);
+      float absDer = fabs(dT_dt);
+      bool inNear = absDelta < NEAR_LIMIT;
+      bool slowSlope = absDer < 0.01; // ~0.6 °C/min
+      bool pwmInformative = (pwm > 5.0f && pwm < 95.0f);
+
+      if (inNear && slowSlope && pwmInformative)
+      {
+        if (!learnStable)
+        {
+          learnStable = true;
+          learnStart = millis();
+        }
+        else
+        {
+          if (millis() - learnStart > 60000UL)
+          {
+            uint8_t bi = band_index_for_setpoint(Setpoint);
+            float expected = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
+            float err = pwm - expected;
+            const float beta = 0.02f; // small learning rate
+            pwm_corr[bi] += beta * err;
+            if (pwm_corr[bi] > 20.0f)
+              pwm_corr[bi] = 20.0f;
+            if (pwm_corr[bi] < -20.0f)
+              pwm_corr[bi] = -20.0f;
+            // Rebuild PWM_N after learning update
+            PWM_N = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
+            learnStart = millis(); // space updates
+          }
+        }
+      }
+      else
+      {
+        learnStable = false;
+      }
     }
   }
   else if (mash_mode == 2)
@@ -1046,6 +1136,8 @@ void set_m()
   PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0);
   lcd.clear();
   emafilter = modify("Pipeline Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
+  lcd.clear();
+  adaptive_enable = modify("Adaptive learn", adaptive_enable, 0, 1, 1, " (no:0 - yes:1)", 0);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
