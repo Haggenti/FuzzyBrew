@@ -103,7 +103,7 @@ uint8_t menu_select = 0;
 uint8_t encbutton_state;
 unsigned long buttontick = 0;
 const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
-const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "BACK", NULL};
+const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "RESET ADAPT", "BACK", NULL};
 const char *menu3[] = {"START", "BACK", "EXIT", NULL};
 
 // ==================== TIMER VARIABLES ====================
@@ -1257,6 +1257,15 @@ void memory_menu()
     menu_select = 0;
     break;
   case 3:
+    lcd.clear();
+    lcd.print(F("Reset adapt corr"));
+    for (int i = 0; i < 8; i++)
+      pwm_corr[i] = 0.0f;
+    writeEEPROM();
+    delay(1000);
+    menu_select = 0;
+    break;
+  case 4:
     menu_select = 0;
     break;
   default:
