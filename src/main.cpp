@@ -7,8 +7,16 @@
 #include "TM1637.h"
 #include <Blinkenlight.h>
 #include <EEPROM.h>
-#include "EMAFilter.h"
+//#include "EMAFilter.h"
 #include <Adafruit_NeoPixel.h>
+
+inline void swap_vals(double &x, double &y)
+{
+  double tmp = x;
+  x = y;
+  y = tmp;
+}
+
 #define test_mode 0 // Set to 1 to enable test mode, 0 for normal operation
 //  ==================== LCD & DISPLAY SETTINGS ====================
 #define LCD_SPACE_SYMBOL 0x20 // Space symbol from LCD ROM (GDM2004D datasheet p.9)
@@ -60,6 +68,8 @@ constexpr uint32_t SAMPLE_PERIOD = 500;
 unsigned lastTempRequest = 0;
 uint32_t lastSampleTime = 0;
 unsigned delayInMillis = 500; // Wait time for temp reading
+double T_filtre, dT_dt, dT_dt_prev = 0.0;
+double dt = 0.75; // intervalle entre mesures
 
 // ==================== PWM & CONTROL SETTINGS ====================
 float OVERSHOOT_X = -0.1;
@@ -105,7 +115,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress tempDeviceAddress;
 I2C_LCD lcd(39);
-EMAFilter tempFilter(0.2); // Initial alpha = 0.2
+//EMAFilter tempFilter(0.2); // Initial alpha = 0.2
 TM1637 tm;
 Blinkenlight buzz(BUZZER_PIN);
 
@@ -176,6 +186,88 @@ void readEEPROM()
   address += sizeof(MAINT_B);
   EEPROM.get(address, MAINT_C);
 }
+
+struct TempFilter
+{
+  // Paramètres EMA adaptatif
+  double alpha_min = 0.08;
+  double alpha_max = 0.35;
+  double k = 0.054;      // pente EMA
+  double maxStep = 0.20; // °C max par cycle (dt ~ 0.75s)
+
+  // Paramètre EMA pour la dérivée
+  double alpha_d = 0.12;
+
+  // État interne
+  double a = NAN, b = NAN, c = NAN; // tampon médiane
+  double ema_y = NAN;
+  double prev_rl = NAN;
+  double prev_Tf = NAN;
+  double deriv_v = 0.0;
+
+  inline double median3(double x, double y, double z)
+  {
+    if (x > y)
+      swap_vals(x, y);
+    if (y > z)
+      swap_vals(y, z);
+    if (x > y)
+      swap_vals(x, y);
+
+    return y;
+  }
+
+  inline double rateLimit(double prev, double now)
+  {
+    if (isnan(prev))
+      return now;
+    double d = now - prev;
+    if (d > maxStep)
+      return prev + maxStep;
+    if (d < -maxStep)
+      return prev - maxStep;
+    return now;
+  }
+
+  // Appel à chaque nouvelle mesure
+  void process(double T_raw, double T_set, double dt,
+               double &T_filtre, double &dT_dt)
+  {
+    // 1) Anti-glitch par médiane
+    a = b;
+    b = c;
+    c = T_raw;
+    double T_med = median3(a, b, c);
+
+    // 2) Limitation de pente
+    double T_rl = rateLimit(prev_rl, T_med);
+    prev_rl = T_rl;
+
+    // 3) EMA adaptatif
+    double e = T_set - T_rl;
+    double alpha = alpha_min + k * fabs(e);
+    if (alpha < alpha_min)
+      alpha = alpha_min;
+    if (alpha > alpha_max)
+      alpha = alpha_max;
+
+    if (isnan(ema_y))
+      ema_y = T_rl;
+    ema_y = alpha * T_rl + (1.0 - alpha) * ema_y;
+    T_filtre = ema_y;
+
+    // 4) Dérivée filtrée
+    if (!isnan(prev_Tf) && dt > 0)
+    {
+      double raw_d = (T_filtre - prev_Tf) / dt;
+      deriv_v = alpha_d * raw_d + (1 - alpha_d) * deriv_v;
+    }
+    prev_Tf = T_filtre;
+    dT_dt = deriv_v;
+  }
+};
+
+TempFilter filt;
 
 // ==================== ENCODER MANAGEMENT ====================
 constexpr byte pinA = 2;                 // Hardware interrupt pin (digital pin 2)
@@ -557,7 +649,7 @@ void read_temp()
     }
     else
     {
-      float rawTemp = sensors.getTempCByIndex(0);
+      float rawTemp = offset_temp + sensors.getTempCByIndex(0);
 
       // Gestion erreur sonde
       if (rawTemp == -127.00 || rawTemp == DEVICE_DISCONNECTED_C)
@@ -580,9 +672,20 @@ void read_temp()
         }
 
         if (emafilter)
-          temperature = tempFilter.update(rawTemp);
+        {
+          filt.process(rawTemp, Setpoint, dt, T_filtre, dT_dt);
+          temperature = T_filtre;
+          if (dT_dt_prev != dT_dt)
+          {
+            lcd.setCursor(13, 3);
+            lcd.print(dT_dt, 3);
+            lcd.clearEOL();
+          }
+          dT_dt_prev = dT_dt;
+          // temperature = tempFilter.update(rawTemp) ;
+        }
         else
-          temperature = rawTemp + offset_temp;
+          temperature = rawTemp;
 
         if (test_mode)
           temperature = 50;
@@ -942,7 +1045,7 @@ void set_m()
   lcd.clear();
   PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0);
   lcd.clear();
-  emafilter = modify("EMA Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
+  emafilter = modify("Pipeline Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
