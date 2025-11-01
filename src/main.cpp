@@ -87,6 +87,10 @@ float MAINT_C = 6.8386f;  // Coefficient C for maintenance power
 // ==================== ADAPTIVE MAINTENANCE CORRECTION ====================
 // Per-temperature-band correction (approx. per 10°C from ~40°C to ~110°C)
 float pwm_corr[8] = {0};
+// Snapshot of last-saved corrections for autosave delta tracking
+float pwm_corr_saved[8] = {0};
+// Last time we autosaved adaptive corrections
+unsigned long last_adapt_save = 0;
 bool adaptive_enable = true; // can be toggled in settings
 inline uint8_t band_index_for_setpoint(float sp)
 {
@@ -105,6 +109,7 @@ unsigned long buttontick = 0;
 const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
 const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "RESET ADAPT", "BACK", NULL};
 const char *menu3[] = {"START", "BACK", "EXIT", NULL};
+const char *confirm_menu[] = {"YES", "NO", NULL};
 
 // ==================== TIMER VARIABLES ====================
 uint32_t chronostart = 0, timelapse = 0;
@@ -742,7 +747,12 @@ void read_temp()
 
         if (emafilter)
         {
-          filt.process(rawTemp, Setpoint, dt, T_filtre, dT_dt);
+          // Compute measured dt (seconds) between filter updates
+          static unsigned long lastFilterTime = 0;
+          unsigned long nowt = millis();
+          double dt_meas = (lastFilterTime == 0) ? dt : (double)(nowt - lastFilterTime) / 1000.0;
+          lastFilterTime = nowt;
+          filt.process(rawTemp, Setpoint, dt_meas, T_filtre, dT_dt);
           temperature = T_filtre;
           // Bottom-right: show learned adaptive bias for current band instead of dT/dt
           uint8_t bi_disp = band_index_for_setpoint(Setpoint);
@@ -1026,6 +1036,10 @@ void setup(void)
   readEEPROM();
   // Initialize feedforward based on current Setpoint
   calculated_power = calc_maintain_pow(Setpoint);
+  // Initialize autosave tracking snapshot for adaptive corrections
+  for (int i = 0; i < 8; i++)
+    pwm_corr_saved[i] = pwm_corr[i];
+  last_adapt_save = millis();
 }
 
 void manual_mode()
@@ -1088,6 +1102,28 @@ void manual_mode()
       else
       {
         learnStable = false;
+      }
+
+      // ==================== Adaptive autosave policy ====================
+      // Every 15 minutes, if any learned bias changed by >= 0.1 since last save, persist to EEPROM.
+      unsigned long now_ms = millis();
+      const unsigned long AUTOSAVE_PERIOD = 900000UL; // 15 minutes
+      if (now_ms - last_adapt_save >= AUTOSAVE_PERIOD)
+      {
+        float max_delta = 0.0f;
+        for (int i = 0; i < 8; i++)
+        {
+          float d = fabs(pwm_corr[i] - pwm_corr_saved[i]);
+          if (d > max_delta)
+            max_delta = d;
+        }
+        if (max_delta >= 0.1f)
+        {
+          writeEEPROM();
+          for (int i = 0; i < 8; i++)
+            pwm_corr_saved[i] = pwm_corr[i];
+        }
+        last_adapt_save = now_ms;
       }
     }
   }
@@ -1293,13 +1329,28 @@ void memory_menu()
     menu_select = 0;
     break;
   case 3:
-    lcd.clear();
-    lcd.print(F("Reset adapt corr"));
-    for (int i = 0; i < 8; i++)
-      pwm_corr[i] = 0.0f;
-    writeEEPROM();
-    delay(1000);
+  {
+    byte conf = menu_mode_flex(confirm_menu, "-- Reset adapt? --");
+    if (conf == 0)
+    {
+      lcd.clear();
+      lcd.print(F("Reset adapt corr"));
+      for (int i = 0; i < 8; i++)
+        pwm_corr[i] = 0.0f;
+      writeEEPROM();
+      // Update autosave snapshot to match cleared values
+      for (int i = 0; i < 8; i++)
+        pwm_corr_saved[i] = pwm_corr[i];
+      delay(800);
+    }
+    else
+    {
+      lcd.clear();
+      lcd.print(F("Canceled"));
+      delay(600);
+    }
     menu_select = 0;
+  }
     break;
   case 4:
     menu_select = 0;
