@@ -683,8 +683,8 @@ void fine()
 
 void read_temp()
 {
-  // Track last shown adaptive bias to avoid unnecessary LCD updates
-  static float prev_bias_display = NAN;
+  // Track last shown adaptive bias (rounded) to avoid unnecessary LCD updates
+  static float prev_bias_display = NAN; // stores the last SHOWN value (after clamp & rounding)
   if (millis() - lastTempRequest >= delayInMillis)
   {
     if (!querry_temp)
@@ -724,12 +724,19 @@ void read_temp()
           // Bottom-right: show learned adaptive bias for current band instead of dT/dt
           uint8_t bi_disp = band_index_for_setpoint(Setpoint);
           float bias_disp = pwm_corr[bi_disp];
-          if (isnan(prev_bias_display) || fabs(bias_disp - prev_bias_display) >= 0.05f)
+          // Clamp tiny values to 0.0 for display
+          float display_val = (fabs(bias_disp) < 0.05f) ? 0.0f : bias_disp;
+          // Round to 1 decimal for comparison (as we print with 1 decimal)
+          float shown = roundf(display_val * 10.0f) / 10.0f;
+          if (isnan(prev_bias_display) || fabs(shown - prev_bias_display) >= 0.05f)
           {
             lcd.setCursor(13, 3);
-            lcd.print(bias_disp, 1); // show with 1 decimal
+            // Print explicit '+' for positives
+            if (shown > 0.0f)
+              lcd.print('+');
+            lcd.print(shown, 1);
             lcd.clearEOL();
-            prev_bias_display = bias_disp;
+            prev_bias_display = shown;
           }
           dT_dt_prev = dT_dt;
           // temperature = tempFilter.update(rawTemp) ;
