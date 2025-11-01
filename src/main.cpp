@@ -230,7 +230,8 @@ struct TempFilter
   double alpha_min = 0.08;
   double alpha_max = 0.35;
   double k = 0.054;      // pente EMA
-  double maxStep = 0.20; // °C max par cycle (dt ~ 0.75s)
+  // Limitation de pente exprimée en vitesse (°C/s). Ex-équivalent ~0.20 °C par 0.75 s -> 0.27 °C/s
+  double maxRate = 0.27; // °C/s
 
   // Paramètre EMA pour la dérivée
   double alpha_d = 0.12;
@@ -241,6 +242,7 @@ struct TempFilter
   double prev_rl = NAN;
   double prev_Tf = NAN;
   double deriv_v = 0.0;
+  int filled = 0; // nombre d'échantillons valides accumulés (<=3)
 
   inline double median3(double x, double y, double z)
   {
@@ -254,11 +256,13 @@ struct TempFilter
     return y;
   }
 
-  inline double rateLimit(double prev, double now)
+  // Limitation de pente dépendante de dt (°C/s * dt)
+  inline double rateLimitDt(double prev, double now, double dt)
   {
     if (isnan(prev))
       return now;
     double d = now - prev;
+    double maxStep = maxRate * (dt > 0 ? dt : 0.75);
     if (d > maxStep)
       return prev + maxStep;
     if (d < -maxStep)
@@ -270,17 +274,27 @@ struct TempFilter
   void process(double T_raw, double T_set, double dt,
                double &T_filtre, double &dT_dt)
   {
-    // 1) Anti-glitch par médiane
-    a = b;
-    b = c;
-    c = T_raw;
-    double T_med = median3(a, b, c);
+    // 0) Remplissage initial et anti-glitch (médiane dès 3 valeurs)
+    if (filled == 0)
+    {
+      a = b = c = T_raw;
+      filled = 1;
+    }
+    else
+    {
+      a = b;
+      b = c;
+      c = T_raw;
+      if (filled < 3)
+        filled++;
+    }
+    double T_med = (filled < 3) ? T_raw : median3(a, b, c);
 
-    // 2) Limitation de pente
-    double T_rl = rateLimit(prev_rl, T_med);
+    // 1) Limitation de pente dépendante de dt
+    double T_rl = rateLimitDt(prev_rl, T_med, dt);
     prev_rl = T_rl;
 
-    // 3) EMA adaptatif
+    // 2) EMA adaptatif
     double e = T_set - T_rl;
     double alpha = alpha_min + k * fabs(e);
     if (alpha < alpha_min)
@@ -293,7 +307,7 @@ struct TempFilter
     ema_y = alpha * T_rl + (1.0 - alpha) * ema_y;
     T_filtre = ema_y;
 
-    // 4) Dérivée filtrée
+    // 3) Dérivée filtrée (avec dt mesuré)
     if (!isnan(prev_Tf) && dt > 0)
     {
       double raw_d = (T_filtre - prev_Tf) / dt;
