@@ -229,7 +229,7 @@ def main():
 
     plt.figure(figsize=(10, 6))
     plt.scatter(temperatures, pwm_values, color="blue", label="Measured points")
-    plt.plot(temp_curve, pwm_curve, "r-", label=f"Best fit: {best_model[name]}")
+    plt.plot(temp_curve, pwm_curve, "r-", label=f"Best fit: {best_model['name']}")
     plt.xlabel("Temperature (°C)")
     plt.ylabel("PWM maintain (%)")
     plt.title("Temperature maintenance curve")
