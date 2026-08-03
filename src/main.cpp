@@ -7,12 +7,11 @@
 #include "TM1637.h"
 #include <Blinkenlight.h>
 #include <EEPROM.h>
-//#include "EMAFilter.h"
 #include <Adafruit_NeoPixel.h>
 
-inline void swap_vals(double &x, double &y)
+inline void swap_vals(float &x, float &y)
 {
-  double tmp = x;
+  float tmp = x;
   x = y;
   y = tmp;
 }
@@ -56,20 +55,22 @@ constexpr uint16_t SERIAL_BAUDRATE = 9600;
 constexpr uint8_t TEMPERATURE_PRECISION = 11;
 float offset_temp = 0.0; // Calibration offset
 
-// Temperature control limits
-constexpr float MIN_SETPOINT = 10, MAX_SETPOINT = 99;
-float Setpoint = 45;
-float prev_temp = 0.0, temperature = 0.0;
-float calculated_power = 0.0;
-float delta = 0.0, old_delta = 0.0, pwm = 0.0, old_pwm = -1.0;
+// Temperature control limits (tenths of degrees Celsius)
+constexpr int16_t MIN_SETPOINT_T = 100;
+constexpr int16_t MAX_SETPOINT_T = 990;
+int16_t Setpoint = 450;
+int16_t prev_temp = 0, temperature = 0;
+float calculated_power = 0.0f;
+int16_t delta = 0, old_delta = -32768;
+float pwm = 0.0f, old_pwm = -1.0f;
 
 // Sampling settings
 constexpr uint32_t SAMPLE_PERIOD = 500;
 unsigned lastTempRequest = 0;
 uint32_t lastSampleTime = 0;
 unsigned delayInMillis = 500; // Wait time for temp reading
-double T_filtre, dT_dt, dT_dt_prev = 0.0;
-double dt = 0.75; // intervalle entre mesures
+float T_filtre, dT_dt, dT_dt_prev = 0.0f;
+float dt = 0.75f; // intervalle entre mesures
 
 // ==================== PWM & CONTROL SETTINGS ====================
 float OVERSHOOT_X = -0.1;
@@ -84,22 +85,9 @@ float MAINT_A = 0.01455f; // Coefficient A for maintenance power
 float MAINT_B = 0.08593f; // Coefficient B for maintenance power
 float MAINT_C = 6.8386f;  // Coefficient C for maintenance power
 
-// ==================== ADAPTIVE MAINTENANCE CORRECTION ====================
-// Per-temperature-band correction (approx. per 10°C from ~40°C to ~110°C)
-float pwm_corr[8] = {0};
-// Snapshot of last-saved corrections for autosave delta tracking
-float pwm_corr_saved[8] = {0};
-// Last time we autosaved adaptive corrections
-unsigned long last_adapt_save = 0;
-bool adaptive_enable = true; // can be toggled in settings
-inline uint8_t band_index_for_setpoint(float sp)
+inline float setpointToFloat(int16_t sp)
 {
-  int idx = int((sp + 5.0f) / 10.0f) - 3; // 35–45 -> 0, 45–55 -> 1, ...
-  if (idx < 0)
-    idx = 0;
-  if (idx > 7)
-    idx = 7;
-  return (uint8_t)idx;
+  return sp / 10.0f;
 }
 
 // ==================== MENU & UI SETTINGS ====================
@@ -107,7 +95,7 @@ uint8_t menu_select = 0;
 uint8_t encbutton_state;
 unsigned long buttontick = 0;
 const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
-const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "RESET ADAPT", "BACK", NULL};
+const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "BACK", NULL};
 // const char *menu3[] = {"START", "BACK", "EXIT", NULL}; // Unused
 const char *confirm_menu[] = {"YES", "NO", NULL};
 
@@ -137,6 +125,20 @@ I2C_LCD lcd(39);
 //EMAFilter tempFilter(0.2); // Initial alpha = 0.2
 TM1637 tm;
 Blinkenlight buzz(BUZZER_PIN);
+
+inline void printTenths(int16_t value)
+{
+  int16_t whole = value / 10;
+  int16_t frac = abs(value % 10);
+  lcd.print(whole);
+  lcd.print('.');
+  lcd.print(frac);
+}
+
+inline void displayTemp(int16_t value)
+{
+  tm.displayFloat(value / 10.0f, 1);
+}
 
 // ==================== FUNCTION PROTOTYPES ====================
 void buttonstate();
@@ -179,13 +181,6 @@ void writeEEPROM()
   address += sizeof(MAINT_B);
   EEPROM.put(address, MAINT_C);
   address += sizeof(MAINT_C);
-  // Save adaptive settings
-  for (int i = 0; i < 8; i++)
-  {
-    EEPROM.put(address, pwm_corr[i]);
-    address += sizeof(pwm_corr[i]);
-  }
-  EEPROM.put(address, adaptive_enable);
 }
 
 void readEEPROM()
@@ -213,38 +208,29 @@ void readEEPROM()
   address += sizeof(MAINT_B);
   EEPROM.get(address, MAINT_C);
   address += sizeof(MAINT_C);
-  // Read adaptive settings (sanitize if EEPROM not yet initialized)
-  for (int i = 0; i < 8; i++)
-  {
-    EEPROM.get(address, pwm_corr[i]);
-    address += sizeof(pwm_corr[i]);
-    if (isnan(pwm_corr[i]) || pwm_corr[i] < -30.0f || pwm_corr[i] > 30.0f)
-      pwm_corr[i] = 0.0f;
-  }
-  EEPROM.get(address, adaptive_enable);
 }
 
 struct TempFilter
 {
   // Paramètres EMA adaptatif
-  double alpha_min = 0.08;
-  double alpha_max = 0.35;
-  double k = 0.054;      // pente EMA
+  float alpha_min = 0.08f;
+  float alpha_max = 0.35f;
+  float k = 0.054f;      // pente EMA
   // Limitation de pente exprimée en vitesse (°C/s). Ex-équivalent ~0.20 °C par 0.75 s -> 0.27 °C/s
-  double maxRate = 0.27; // °C/s
+  float maxRate = 0.27f; // °C/s
 
   // Paramètre EMA pour la dérivée
-  double alpha_d = 0.12;
+  float alpha_d = 0.12f;
 
   // État interne
-  double a = NAN, b = NAN, c = NAN; // tampon médiane
-  double ema_y = NAN;
-  double prev_rl = NAN;
-  double prev_Tf = NAN;
-  double deriv_v = 0.0;
+  float a = NAN, b = NAN, c = NAN; // tampon médiane
+  float ema_y = NAN;
+  float prev_rl = NAN;
+  float prev_Tf = NAN;
+  float deriv_v = 0.0f;
   int filled = 0; // nombre d'échantillons valides accumulés (<=3)
 
-  inline double median3(double x, double y, double z)
+  inline float median3(float x, float y, float z)
   {
     if (x > y)
       swap_vals(x, y);
@@ -257,12 +243,12 @@ struct TempFilter
   }
 
   // Limitation de pente dépendante de dt (°C/s * dt)
-  inline double rateLimitDt(double prev, double now, double dt)
+  inline float rateLimitDt(float prev, float now, float dt)
   {
     if (isnan(prev))
       return now;
-    double d = now - prev;
-    double maxStep = maxRate * (dt > 0 ? dt : 0.75);
+    float d = now - prev;
+    float maxStep = maxRate * (dt > 0 ? dt : 0.75f);
     if (d > maxStep)
       return prev + maxStep;
     if (d < -maxStep)
@@ -271,8 +257,8 @@ struct TempFilter
   }
 
   // Appel à chaque nouvelle mesure
-  void process(double T_raw, double T_set, double dt,
-               double &T_filtre, double &dT_dt)
+  void process(float T_raw, float T_set, float dt,
+               float &T_filtre, float &dT_dt)
   {
     // 0) Remplissage initial et anti-glitch (médiane dès 3 valeurs)
     if (filled == 0)
@@ -288,15 +274,15 @@ struct TempFilter
       if (filled < 3)
         filled++;
     }
-    double T_med = (filled < 3) ? T_raw : median3(a, b, c);
+    float T_med = (filled < 3) ? T_raw : median3(a, b, c);
 
     // 1) Limitation de pente dépendante de dt
-    double T_rl = rateLimitDt(prev_rl, T_med, dt);
+    float T_rl = rateLimitDt(prev_rl, T_med, dt);
     prev_rl = T_rl;
 
     // 2) EMA adaptatif
-    double e = T_set - T_rl;
-    double alpha = alpha_min + k * fabs(e);
+    float e = T_set - T_rl;
+    float alpha = alpha_min + k * fabsf(e);
     if (alpha < alpha_min)
       alpha = alpha_min;
     if (alpha > alpha_max)
@@ -310,8 +296,8 @@ struct TempFilter
     // 3) Dérivée filtrée (avec dt mesuré)
     if (!isnan(prev_Tf) && dt > 0)
     {
-      double raw_d = (T_filtre - prev_Tf) / dt;
-      deriv_v = alpha_d * raw_d + (1 - alpha_d) * deriv_v;
+      float raw_d = (T_filtre - prev_Tf) / dt;
+      deriv_v = alpha_d * raw_d + (1.0f - alpha_d) * deriv_v;
     }
     prev_Tf = T_filtre;
     dT_dt = deriv_v;
@@ -413,7 +399,7 @@ void PinB()
 float calc_maintain_pow(float stp)
 {
   float result = MAINT_A * expf(MAINT_B * stp) + MAINT_C;
-  return roundf(result * 10) / 10.0;
+  return roundf(result * 10.0f) / 10.0f;
 }
 
 void factory_rst()
@@ -431,26 +417,24 @@ void factory_rst()
   MAINT_A = 0.01455f;
   MAINT_B = 0.08593f;
   MAINT_C = 6.8386f;
-  for (int i = 0; i < 8; i++)
-    pwm_corr[i] = 0.0f;
-  adaptive_enable = true;
   delay(1000);
   lcd.print(F("OK!"));
 }
 void check_counter()
 {
   static bool wasStable = false;
-  // Reference setpoint for timer resets on setpoint changes (>1.0°C)
-  static float sp_ref_for_timer = NAN;
+  static int16_t sp_ref_for_timer = 0;
+  static bool sp_ref_initialized = false;
 
   // Initialize reference on first call
-  if (isnan(sp_ref_for_timer))
+  if (!sp_ref_initialized)
   {
     sp_ref_for_timer = Setpoint;
+    sp_ref_initialized = true;
   }
 
   // Reset timer if setpoint changed significantly (> 1.0°C)
-  if (fabs(Setpoint - sp_ref_for_timer) > 1.0f)
+  if (abs(Setpoint - sp_ref_for_timer) > 10)
   {
     timer_active = false;
     chronostart = 0;
@@ -464,7 +448,7 @@ void check_counter()
   }
 
   // Vérifie si l'écart entre température et consigne est trop grand
-  if (abs(temperature - Setpoint) > 2.0)
+  if (abs((int)temperature - (int)Setpoint) > 20)
   {
     timer_active = false;
     chronostart = 0;
@@ -552,16 +536,16 @@ void ssr_mgmt()
 
 float pwm_cal()
 {
-  float ramp_temp = (delta - NEAR_LIMIT) * ((PWM_FAR - calculated_power) / (FAR_LIMIT - NEAR_LIMIT));
+  float ramp_temp = ((delta / 10.0f) - NEAR_LIMIT) * ((PWM_FAR - calculated_power) / (FAR_LIMIT - NEAR_LIMIT));
   float ramp;
-  ramp = roundf(ramp_temp * 10) / 10.0;
+  ramp = roundf(ramp_temp * 10.0f) / 10.0f;
 
   float return_value;
 
-  return_value = (delta <= OVERSHOOT_X)  ? 0
-                 : (delta <= NEAR_LIMIT) ? PWM_N
-                 : (delta < FAR_LIMIT)   ? PWM_N + ramp
-                                         : PWM_NEAR_OFFSET + PWM_FAR;
+  return_value = ((delta / 10.0f) <= OVERSHOOT_X)  ? 0.0f
+                 : ((delta / 10.0f) <= NEAR_LIMIT) ? PWM_N
+                 : ((delta / 10.0f) < FAR_LIMIT)   ? PWM_N + ramp
+                                                   : PWM_NEAR_OFFSET + PWM_FAR;
 
   return return_value;
 }
@@ -571,23 +555,21 @@ void setpoint_mgmt()
 {
   if (encPos != 0)
   {
-    Setpoint = constrain(Setpoint + (0.1 * encPos), MIN_SETPOINT, MAX_SETPOINT);
+    Setpoint = constrain((int16_t)(Setpoint + (10 * encPos)), MIN_SETPOINT_T, MAX_SETPOINT_T);
     encPos = 0;
 
     lcd.setCursor(5, 0);
-    lcd.print(Setpoint, 1);
+    printTenths(Setpoint);
     print_deg();
 
     // Update feedforward power based on Setpoint (not temperature)
-    calculated_power = calc_maintain_pow(Setpoint);
+    calculated_power = calc_maintain_pow(setpointToFloat(Setpoint));
   }
 
   delta = Setpoint - temperature;
   if (old_delta != delta)
   {
-    // Apply adaptive correction per temperature band
-    uint8_t bi = band_index_for_setpoint(Setpoint);
-    PWM_N = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
+    PWM_N = PWM_NEAR_OFFSET + calculated_power;
   }
   old_delta = delta;
 
@@ -605,7 +587,7 @@ void restore_disp_man()
   lcd.print(F("00:00:00"));
   lcd.setCursor(0, 0);
   lcd.print(F("Set: "));
-  lcd.print(Setpoint, 1);
+  printTenths(Setpoint);
   print_deg();
 }
 
@@ -725,8 +707,6 @@ void fine()
 
 void read_temp()
 {
-  // Track last shown adaptive bias (rounded) to avoid unnecessary LCD updates
-  static float prev_bias_display = NAN; // stores the last SHOWN value (after clamp & rounding)
   if (millis() - lastTempRequest >= delayInMillis)
   {
     if (!querry_temp)
@@ -752,11 +732,11 @@ void read_temp()
       }
       else
       { // Température valide
-        if (error)
+              if (error)
         { // Si on sort d'une erreur
           error = false;
           resetSensor(); // Réinitialise une fois que le capteur est reconnu
-          tm.displayFloat(temperature, 1);
+          displayTemp(temperature);
         }
 
         if (emafilter)
@@ -764,39 +744,21 @@ void read_temp()
           // Compute measured dt (seconds) between filter updates
           static unsigned long lastFilterTime = 0;
           unsigned long nowt = millis();
-          double dt_meas = (lastFilterTime == 0) ? dt : (double)(nowt - lastFilterTime) / 1000.0;
+          float dt_meas = (lastFilterTime == 0) ? dt : (float)(nowt - lastFilterTime) / 1000.0f;
           lastFilterTime = nowt;
           filt.process(rawTemp, Setpoint, dt_meas, T_filtre, dT_dt);
-          temperature = T_filtre;
-          // Bottom-right: show learned adaptive bias for current band instead of dT/dt
-          uint8_t bi_disp = band_index_for_setpoint(Setpoint);
-          float bias_disp = pwm_corr[bi_disp];
-          // Clamp tiny values to 0.0 for display
-          float display_val = (fabs(bias_disp) < 0.05f) ? 0.0f : bias_disp;
-          // Round to 1 decimal for comparison (as we print with 1 decimal)
-          float shown = roundf(display_val * 10.0f) / 10.0f;
-          if (isnan(prev_bias_display) || fabs(shown - prev_bias_display) >= 0.05f)
-          {
-            lcd.setCursor(13, 3);
-            // Print explicit '+' for positives
-            if (shown > 0.0f)
-              lcd.print('+');
-            lcd.print(shown, 1);
-            lcd.clearEOL();
-            prev_bias_display = shown;
-          }
+          temperature = (int16_t)roundf(T_filtre * 10.0f);
           dT_dt_prev = dT_dt;
-          // temperature = tempFilter.update(rawTemp) ;
         }
         else
-          temperature = rawTemp;
+          temperature = (int16_t)roundf(rawTemp * 10.0f);
 
         if (test_mode)
-          temperature = 50;
+          temperature = 500;
 
         if (temperature != prev_temp)
         {
-          tm.displayFloat(temperature, 1);
+          displayTemp(temperature);
           prev_temp = temperature;
           delta = Setpoint - temperature;
           // Feedforward power is now computed on Setpoint (see setpoint_mgmt)
@@ -1049,11 +1011,7 @@ void setup(void)
   black();
   readEEPROM();
   // Initialize feedforward based on current Setpoint
-  calculated_power = calc_maintain_pow(Setpoint);
-  // Initialize autosave tracking snapshot for adaptive corrections
-  for (int i = 0; i < 8; i++)
-    pwm_corr_saved[i] = pwm_corr[i];
-  last_adapt_save = millis();
+  calculated_power = calc_maintain_pow(setpointToFloat(Setpoint));
 }
 
 void manual_mode()
@@ -1075,71 +1033,6 @@ void manual_mode()
       setpoint_mgmt();
     }
 
-    // ==================== Adaptive learning (BREW only) ====================
-    if (adaptive_enable && !error && !test_mode)
-    {
-      static bool learnStable = false;
-      static unsigned long learnStart = 0;
-
-      float absDelta = fabs(Setpoint - temperature);
-      float absDer = fabs(dT_dt);
-      bool inNear = absDelta < NEAR_LIMIT;
-      bool slowSlope = absDer < 0.01; // ~0.6 °C/min
-      bool pwmInformative = (pwm > 5.0f && pwm < 95.0f);
-
-      if (inNear && slowSlope && pwmInformative)
-      {
-        if (!learnStable)
-        {
-          learnStable = true;
-          learnStart = millis();
-        }
-        else
-        {
-          if (millis() - learnStart > 60000UL)
-          {
-            uint8_t bi = band_index_for_setpoint(Setpoint);
-            float expected = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
-            float err = pwm - expected;
-            const float beta = 0.02f; // small learning rate
-            pwm_corr[bi] += beta * err;
-            if (pwm_corr[bi] > 20.0f)
-              pwm_corr[bi] = 20.0f;
-            if (pwm_corr[bi] < -20.0f)
-              pwm_corr[bi] = -20.0f;
-            // Rebuild PWM_N after learning update
-            PWM_N = PWM_NEAR_OFFSET + calculated_power + pwm_corr[bi];
-            learnStart = millis(); // space updates
-          }
-        }
-      }
-      else
-      {
-        learnStable = false;
-      }
-
-      // ==================== Adaptive autosave policy ====================
-      // Every 15 minutes, if any learned bias changed by >= 0.1 since last save, persist to EEPROM.
-      unsigned long now_ms = millis();
-      const unsigned long AUTOSAVE_PERIOD = 900000UL; // 15 minutes
-      if (now_ms - last_adapt_save >= AUTOSAVE_PERIOD)
-      {
-        float max_delta = 0.0f;
-        for (int i = 0; i < 8; i++)
-        {
-          float d = fabs(pwm_corr[i] - pwm_corr_saved[i]);
-          if (d > max_delta)
-            max_delta = d;
-        }
-        if (max_delta >= 0.1f)
-        {
-          writeEEPROM();
-          for (int i = 0; i < 8; i++)
-            pwm_corr_saved[i] = pwm_corr[i];
-        }
-        last_adapt_save = now_ms;
-      }
-    }
   }
   else if (mash_mode == 2)
   {
@@ -1223,8 +1116,6 @@ void set_m()
   lcd.clear();
   emafilter = modify("Pipeline Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
   lcd.clear();
-  adaptive_enable = modify("Adaptive learn", adaptive_enable, 0, 1, 1, " (no:0 - yes:1)", 0);
-  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
   lcd.setCursor(0, 1);
@@ -1296,12 +1187,12 @@ void set_m()
   MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
 
   // Test de validité et correction si nécessaire
-  if (MAINT_A <= 0 || isnan(MAINT_A))
-    MAINT_A = 0.01455;
-  if (MAINT_B <= 0 || isnan(MAINT_B))
-    MAINT_B = 0.08593;
-  if (MAINT_C <= 0 || isnan(MAINT_C))
-    MAINT_C = 6.8386;
+  if (MAINT_A <= 0.0f || isnan(MAINT_A))
+    MAINT_A = 0.01455f;
+  if (MAINT_B <= 0.0f || isnan(MAINT_B))
+    MAINT_B = 0.08593f;
+  if (MAINT_C <= 0.0f || isnan(MAINT_C))
+    MAINT_C = 6.8386f;
 
   // Affichage des valeurs finales pour confirmation
   lcd.clear();
@@ -1347,30 +1238,6 @@ void memory_menu()
     menu_select = 0;
     break;
   case 3:
-  {
-    byte conf = menu_mode_flex(confirm_menu, "-- Reset adapt? --");
-    if (conf == 0)
-    {
-      lcd.clear();
-      lcd.print(F("Reset adapt corr"));
-      for (int i = 0; i < 8; i++)
-        pwm_corr[i] = 0.0f;
-      writeEEPROM();
-      // Update autosave snapshot to match cleared values
-      for (int i = 0; i < 8; i++)
-        pwm_corr_saved[i] = pwm_corr[i];
-      delay(800);
-    }
-    else
-    {
-      lcd.clear();
-      lcd.print(F("Canceled"));
-      delay(600);
-    }
-    menu_select = 0;
-  }
-    break;
-  case 4:
     menu_select = 0;
     break;
   default:
