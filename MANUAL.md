@@ -158,16 +158,31 @@ pip install numpy scipy matplotlib
 1. Run the script:
 python calibrate.py
 
+or with a CSV file:
+python calibrate.py --file measurements.csv
+
+CSV format example:
+```
+40,12.5
+50,18.0
+60,25.2
+70,33.0
+```
+
+The file should contain temperature and PWM values on each line, separated by a comma.
 
 2. The script will:
-   - Calculate optimal A, B, C coefficients
-   - Show a graph of your measurements vs calculated curve
+   - Compare several curve models (linear, quadratic, power, exponential)
+   - Select the best fit by RMSE
+   - Print fit quality metrics for each model (RMSE and R²)
+   - Show a graph of the measured points and the chosen best-fit curve
 
 
 ### Using the Results
 1. In your controller's Settings menu:
    - Go to Power Curve section
-   - Enter the A, B, C values exactly as shown
+   - Enter the A, B, C values shown if the selected model is exponential
+   - If another model fits better, use the graph to judge whether the exponential curve is still acceptable for your firmware
    - Values typically range:
      * A: 0.01 to 0.02
      * B: 0.08 to 0.09

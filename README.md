@@ -53,3 +53,6 @@ The user assumes all responsibility for:
 - **Auto Mode**: Automated brewing steps sequence
 - **Preset Mode**: Quick temperature presets selection
 - **Standby Mode**: Temperature monitoring without heating
+
+## Calibration script
+The repository includes `calibrate.py`, which can fit several models to your measured temperature/PWM data, choose the best curve automatically, and show fit quality metrics like RMSE and R². Run it interactively or with `python calibrate.py --file measurements.csv`.
