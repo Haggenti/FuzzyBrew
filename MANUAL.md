@@ -136,57 +136,19 @@ Required Arduino libraries:
 5. Test multiple temperature points
 
 
-## Using Calibration Script for power curve
+## Maintenance tuning
+The system now uses a linear maintenance feedforward model based on ambient temperature.
 
-### Prerequisites on computer
-1. Install Python and required packages:
+At startup, the controller captures ambient temperature and uses a line defined by:
+- PWM = 0% at ambient temperature
+- PWM = configured target at 78°C
 
-pip install numpy scipy matplotlib
+### Tuning maintenance power
+1. Open the settings menu.
+2. Under `Power Curve Setup`, set the PWM target value for 78°C.
+3. A default value of `20%` is provided.
 
-
-### Collecting Data Points
-1. On your brewing system:
-   - Start with full water volume (typical brew volume + estimated grain volume)
-   - Enter Brew mode and enable Fine Adjustment (press and hold encoder, and release)
-   - For each temperature (40°C to 90°C):
-     a. Set target temperature and wait for stabilization (≈15min)
-     b. Fine tune PWM until temperature is perfectly stable
-     c. Write down the temperature and PWM % values
-   - Recommended test points: 40°C, 50°C, 60°C, 70°C, 80°C, 90°C
-
-### Running Calibration
-1. Run the script:
-python calibrate.py
-
-or with a CSV file:
-python calibrate.py --file measurements.csv
-
-CSV format example:
-```
-40,12.5
-50,18.0
-60,25.2
-70,33.0
-```
-
-The file should contain temperature and PWM values on each line, separated by a comma.
-
-2. The script will:
-   - Compare several curve models (linear, quadratic, power, exponential)
-   - Select the best fit by RMSE
-   - Print fit quality metrics for each model (RMSE and R²)
-   - Show a graph of the measured points and the chosen best-fit curve
-
-
-### Using the Results
-1. In your controller's Settings menu:
-   - Go to Power Curve section
-   - Enter the A, B, C values shown if the selected model is exponential
-   - If another model fits better, use the graph to judge whether the exponential curve is still acceptable for your firmware
-   - Values typically range:
-     * A: 0.01 to 0.02
-     * B: 0.08 to 0.09
-     * C: 6 to 7
+This simplified model removes the need for external curve-fitting utilities; only the target PWM at 78°C is required.
 
 ### Verification
 1. Test several temperatures

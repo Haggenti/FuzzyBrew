@@ -1,3 +1,6 @@
+// Version 2.5
+// Incrémentez le numéro de version à chaque commit
+#define VERSION "2.5"
 // #pragma GCC optimize("Os") // code optimisation controls - "O2" & "O3" code performance, "Os" code size
 #include <Arduino.h>
 #include <Wire.h>
@@ -139,12 +142,9 @@ float PWM_FAR = 90.0, PWM_NEAR_OFFSET = 0.0, PWM_N = 0.0;
 uint32_t PWM_PERIOD = 5000;
 bool pwmstate = false;
 uint32_t onPWM_PERIOD = 0;
-
-float MAINT_A = 0.01455f; // Coefficient A for maintenance power or generic curve parameter 1
-float MAINT_B = 0.08593f; // Coefficient B for maintenance power or generic curve parameter 2
-float MAINT_C = 6.8386f;  // Coefficient C for maintenance power or generic curve parameter 3
-uint8_t MAINT_CURVE = 0;  // 0=exponential, 1=linear, 2=quadratic, 3=power
-const char *MAINT_CURVE_NAMES[] = {"Exp", "Lin", "Quad", "Pow"};
+// Ambient temperature (tenths of °C). Captured at startup for diagnostics/feedforward.
+int16_t ambient_temp = 0;
+float MAINT_C = 20.0f;    // PWM target at 78°C for ambient-linear feedforward
 
 inline float setpointToFloat(int16_t sp)
 {
@@ -234,14 +234,8 @@ void writeEEPROM()
   address += sizeof(PWM_PERIOD);
   EEPROM.put(address, emafilter);
   address += sizeof(emafilter);
-  EEPROM.put(address, MAINT_A);
-  address += sizeof(MAINT_A);
-  EEPROM.put(address, MAINT_B);
-  address += sizeof(MAINT_B);
   EEPROM.put(address, MAINT_C);
   address += sizeof(MAINT_C);
-  EEPROM.put(address, MAINT_CURVE);
-  address += sizeof(MAINT_CURVE);
 }
 
 void readEEPROM()
@@ -263,14 +257,8 @@ void readEEPROM()
   address += sizeof(PWM_PERIOD);
   EEPROM.get(address, emafilter);
   address += sizeof(emafilter);
-  EEPROM.get(address, MAINT_A);
-  address += sizeof(MAINT_A);
-  EEPROM.get(address, MAINT_B);
-  address += sizeof(MAINT_B);
   EEPROM.get(address, MAINT_C);
   address += sizeof(MAINT_C);
-  EEPROM.get(address, MAINT_CURVE);
-  address += sizeof(MAINT_CURVE);
 }
 
 struct TempFilter
@@ -459,44 +447,21 @@ void PinB()
   }
 }
 
-float calc_maintain_exp(float stp)
-{
-  float result = MAINT_A * expf(MAINT_B * stp) + MAINT_C;
-  return roundf(result * 10.0f) / 10.0f;
-}
-
-float calc_maintain_lin(float stp)
-{
-  float result = MAINT_A * stp + MAINT_B;
-  return roundf(result * 10.0f) / 10.0f;
-}
-
-float calc_maintain_quad(float stp)
-{
-  float result = MAINT_A * stp * stp + MAINT_B * stp + MAINT_C;
-  return roundf(result * 10.0f) / 10.0f;
-}
-
-float calc_maintain_pow(float stp)
-{
-  float result = MAINT_A * powf(stp, MAINT_B) + MAINT_C;
-  return roundf(result * 10.0f) / 10.0f;
-}
 
 float calc_maintain_curve(float stp)
 {
-  switch (MAINT_CURVE)
-  {
-  case 1:
-    return calc_maintain_lin(stp);
-  case 2:
-    return calc_maintain_quad(stp);
-  case 3:
-    return calc_maintain_pow(stp);
-  case 0:
-  default:
-    return calc_maintain_exp(stp);
-  }
+  float ambient = ambient_temp / 10.0f;
+  float target_pwm = MAINT_C;
+  float denom = 78.0f - ambient;
+  if (fabsf(denom) < 0.001f)
+    return 0.0f;
+
+  float slope = target_pwm / denom;
+  float result = slope * (stp - ambient);
+  if (result < 0.0f)
+    result = 0.0f;
+
+  return roundf(result * 10.0f) / 10.0f;
 }
 
 void factory_rst()
@@ -511,10 +476,7 @@ void factory_rst()
   PWM_NEAR_OFFSET = 0.0;
   PWM_PERIOD = 5000;
   emafilter = true;
-  MAINT_A = 0.01455f;
-  MAINT_B = 0.08593f;
-  MAINT_C = 6.8386f;
-  MAINT_CURVE = 0;
+  MAINT_C = 20.0f;
   delay(1000);
   lcd.print(F("OK!"));
 }
@@ -634,16 +596,17 @@ void ssr_mgmt()
 
 float pwm_cal()
 {
-  float ramp_temp = ((delta / 10.0f) - NEAR_LIMIT) * ((PWM_FAR - calculated_power) / (FAR_LIMIT - NEAR_LIMIT));
-  float ramp;
-  ramp = roundf(ramp_temp * 10.0f) / 10.0f;
+  float error = delta / 10.0f;
+  float slope = (PWM_FAR - PWM_N) / (FAR_LIMIT - NEAR_LIMIT);
+  float ramp_temp = (error - NEAR_LIMIT) * slope;
+  float ramp = roundf(ramp_temp * 10.0f) / 10.0f;
 
   float return_value;
 
-  return_value = ((delta / 10.0f) <= OVERSHOOT_X)  ? 0.0f
-                 : ((delta / 10.0f) <= NEAR_LIMIT) ? PWM_N
-                 : ((delta / 10.0f) < FAR_LIMIT)   ? PWM_N + ramp
-                                                   : PWM_NEAR_OFFSET + PWM_FAR;
+  return_value = (error <= OVERSHOOT_X)  ? 0.0f
+                 : (error <= NEAR_LIMIT) ? PWM_N
+                 : (error < FAR_LIMIT)   ? PWM_N + ramp
+                                        : PWM_FAR;
 
   return return_value;
 }
@@ -1087,6 +1050,12 @@ void setup(void)
   Wire.begin();
   // Wire.setClock(100000);
   lcd.begin(20, 4);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("Version "));
+  lcd.print(VERSION);
+  delay(1000);
+  lcd.clear();
   lcd.createChar(1, delta_char);
   lcd.createChar(2, arrowUp);
   lcd.createChar(3, arrowDown);
@@ -1107,6 +1076,27 @@ void setup(void)
   readEEPROM();
   // Initialize feedforward based on current Setpoint
   calculated_power = calc_maintain_curve(setpointToFloat(Setpoint));
+  // Capture ambient temperature at startup (average of a few samples)
+  {
+    const int samples = 5;
+    int valid = 0;
+    float sum = 0.0f;
+    for (int i = 0; i < samples; ++i)
+    {
+      sensors.requestTemperatures();
+      delay(100);
+      float t = sensors.getTempCByIndex(0);
+      if (t != DEVICE_DISCONNECTED_C && t != -127.0f)
+      {
+        sum += t;
+        valid++;
+      }
+    }
+    if (valid > 0)
+      ambient_temp = (int16_t)roundf((sum / valid) * 10.0f);
+    else
+      ambient_temp = 0; // unknown
+  }
 }
 
 void manual_mode()
@@ -1212,12 +1202,6 @@ void set_m()
   emafilter = modify("EMA Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
 
   lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(F("Curve type:"));
-  lcd.setCursor(0,1);
-  lcd.print(MAINT_CURVE_NAMES[MAINT_CURVE]);
-  MAINT_CURVE = (uint8_t)selector(MAINT_CURVE, 0, 3, 1, 0, 13, 1);
-  lcd.clear();
 
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
@@ -1277,53 +1261,23 @@ void set_m()
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Power Curve Setup"));
+  delay(500);
 
-  if (MAINT_CURVE == 0)
-  {
-    float newA = modify("Coeff. A (x0.0001)", MAINT_A * 10000, 1, 10000, 1, "", 0);
-    MAINT_A = newA / 10000.0;
-    float newB = modify("Coeff. B (x0.0001)", MAINT_B * 10000, 1, 10000, 1, "", 0);
-    MAINT_B = newB / 10000.0;
-    MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
-  }
-  else if (MAINT_CURVE == 1)
-  {
-    MAINT_A = modify("Linear slope", MAINT_A, 0.0, 10.0, 0.1, "", 1);
-    MAINT_B = modify("Linear bias", MAINT_B, -100.0, 100.0, 0.1, "", 1);
-    MAINT_C = 0.0f;
-  }
-  else if (MAINT_CURVE == 2)
-  {
-    MAINT_A = modify("Quad A", MAINT_A, 0.0, 0.1, 0.001, "", 3);
-    MAINT_B = modify("Quad B", MAINT_B, -1.0, 1.0, 0.01, "", 2);
-    MAINT_C = modify("Quad C", MAINT_C, -10.0, 50.0, 0.1, "", 1);
-  }
-  else if (MAINT_CURVE == 3)
-  {
-    MAINT_A = modify("Power A", MAINT_A, 0.0, 10.0, 0.1, "", 1);
-    MAINT_B = modify("Power B", MAINT_B, 0.0, 10.0, 0.1, "", 1);
-    MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
-  }
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(F("Ambient = 0% PWM"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("78°C => PWM:"));
+  MAINT_C = modify("PWM at 78°C", MAINT_C, 0.0, 100.0, 0.1, " %", 1);
 
-  // Test de validité et correction si nécessaire
-  if (MAINT_A <= 0.0f || isnan(MAINT_A))
-    MAINT_A = 0.01455f;
-  if (MAINT_B <= 0.0f || isnan(MAINT_B))
-    MAINT_B = (MAINT_CURVE == 0) ? 0.08593f : 0.0f;
-  if (MAINT_CURVE == 0 && (MAINT_C <= 0.0f || isnan(MAINT_C)))
-    MAINT_C = 6.8386f;
+  if (MAINT_C < 0.0f || isnan(MAINT_C))
+    MAINT_C = 20.0f;
 
   // Affichage des valeurs finales pour confirmation
   lcd.clear();
   lcd.print(F("Values set to:"));
   lcd.setCursor(0, 1);
-  lcd.print(F("A:"));
-  lcd.print(MAINT_A, 5);
-  lcd.setCursor(0, 2);
-  lcd.print(F("B:"));
-  lcd.print(MAINT_B, 5);
-  lcd.setCursor(0, 3);
-  lcd.print(F("C:"));
+  lcd.print(F("PWM@78C:"));
   lcd.print(MAINT_C, 1);
   delay(2000);
 

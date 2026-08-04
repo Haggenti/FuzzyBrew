@@ -42,7 +42,7 @@ The user assumes all responsibility for:
 
 ### Temperature Control
 - Fuzzy logic control with 4 distinct zones
-- Logarithmic power curve for maintenance
+- Ambient-based linear maintenance feedforward
 - Real-time LCD 20x4 display
 - TM1637 LED display for current temperature
 - Visual heating indication via RGB LED (red)
