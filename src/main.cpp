@@ -7,7 +7,6 @@
 #include "TM1637.h"
 #include <Blinkenlight.h>
 #include <EEPROM.h>
-#include <Adafruit_NeoPixel.h>
 
 inline void swap_vals(float &x, float &y)
 {
@@ -38,7 +37,68 @@ inline void swap_vals(float &x, float &y)
 constexpr uint8_t LED_PIN = 11;
 #define NUM_LEDS 1
 
-Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+#define LED_PORT PORTB
+#define LED_DDR DDRB
+#define LED_MASK _BV(PORTB3)
+
+inline void ws2812_init()
+{
+  LED_DDR |= LED_MASK;
+  LED_PORT &= ~LED_MASK;
+}
+
+static inline void ws2812_sendBit(bool bitVal)
+{
+  if (bitVal)
+  {
+    LED_PORT |= LED_MASK;
+    asm volatile(
+        "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t"
+        :
+        :
+        :);
+    LED_PORT &= ~LED_MASK;
+    asm volatile(
+        "nop\n\t" "nop\n\t"
+        :
+        :
+        :);
+  }
+  else
+  {
+    LED_PORT |= LED_MASK;
+    asm volatile(
+        "nop\n\t" "nop\n\t" "nop\n\t"
+        :
+        :
+        :);
+    LED_PORT &= ~LED_MASK;
+    asm volatile(
+        "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t"
+        :
+        :
+        :);
+  }
+}
+
+static inline void ws2812_sendByte(uint8_t byte)
+{
+  for (uint8_t bit = 0; bit < 8; ++bit)
+  {
+    ws2812_sendBit(byte & 0x80);
+    byte <<= 1;
+  }
+}
+
+static inline void ws2812_show(uint8_t red, uint8_t green, uint8_t blue)
+{
+  noInterrupts();
+  ws2812_sendByte(green);
+  ws2812_sendByte(red);
+  ws2812_sendByte(blue);
+  interrupts();
+  delayMicroseconds(80);
+}
 
 // ==================== HARDWARE PIN DEFINITIONS ====================
 constexpr uint8_t PIN_BTN = 4;
@@ -81,9 +141,11 @@ uint32_t PWM_PERIOD = 5000;
 bool pwmstate = false;
 uint32_t onPWM_PERIOD = 0;
 
-float MAINT_A = 0.01455f; // Coefficient A for maintenance power
-float MAINT_B = 0.08593f; // Coefficient B for maintenance power
-float MAINT_C = 6.8386f;  // Coefficient C for maintenance power
+float MAINT_A = 0.01455f; // Coefficient A for maintenance power or generic curve parameter 1
+float MAINT_B = 0.08593f; // Coefficient B for maintenance power or generic curve parameter 2
+float MAINT_C = 6.8386f;  // Coefficient C for maintenance power or generic curve parameter 3
+uint8_t MAINT_CURVE = 0;  // 0=exponential, 1=linear, 2=quadratic, 3=power
+const char *MAINT_CURVE_NAMES[] = {"Exp", "Lin", "Quad", "Pow"};
 
 inline float setpointToFloat(int16_t sp)
 {
@@ -181,6 +243,8 @@ void writeEEPROM()
   address += sizeof(MAINT_B);
   EEPROM.put(address, MAINT_C);
   address += sizeof(MAINT_C);
+  EEPROM.put(address, MAINT_CURVE);
+  address += sizeof(MAINT_CURVE);
 }
 
 void readEEPROM()
@@ -208,6 +272,8 @@ void readEEPROM()
   address += sizeof(MAINT_B);
   EEPROM.get(address, MAINT_C);
   address += sizeof(MAINT_C);
+  EEPROM.get(address, MAINT_CURVE);
+  address += sizeof(MAINT_CURVE);
 }
 
 struct TempFilter
@@ -396,10 +462,44 @@ void PinB()
   }
 }
 
-float calc_maintain_pow(float stp)
+float calc_maintain_exp(float stp)
 {
   float result = MAINT_A * expf(MAINT_B * stp) + MAINT_C;
   return roundf(result * 10.0f) / 10.0f;
+}
+
+float calc_maintain_lin(float stp)
+{
+  float result = MAINT_A * stp + MAINT_B;
+  return roundf(result * 10.0f) / 10.0f;
+}
+
+float calc_maintain_quad(float stp)
+{
+  float result = MAINT_A * stp * stp + MAINT_B * stp + MAINT_C;
+  return roundf(result * 10.0f) / 10.0f;
+}
+
+float calc_maintain_pow(float stp)
+{
+  float result = MAINT_A * powf(stp, MAINT_B) + MAINT_C;
+  return roundf(result * 10.0f) / 10.0f;
+}
+
+float calc_maintain_curve(float stp)
+{
+  switch (MAINT_CURVE)
+  {
+  case 1:
+    return calc_maintain_lin(stp);
+  case 2:
+    return calc_maintain_quad(stp);
+  case 3:
+    return calc_maintain_pow(stp);
+  case 0:
+  default:
+    return calc_maintain_exp(stp);
+  }
 }
 
 void factory_rst()
@@ -417,6 +517,7 @@ void factory_rst()
   MAINT_A = 0.01455f;
   MAINT_B = 0.08593f;
   MAINT_C = 6.8386f;
+  MAINT_CURVE = 0;
   delay(1000);
   lcd.print(F("OK!"));
 }
@@ -563,7 +664,7 @@ void setpoint_mgmt()
     print_deg();
 
     // Update feedforward power based on Setpoint (not temperature)
-    calculated_power = calc_maintain_pow(setpointToFloat(Setpoint));
+    calculated_power = calc_maintain_curve(setpointToFloat(Setpoint));
   }
 
   delta = Setpoint - temperature;
@@ -1004,14 +1105,11 @@ void setup(void)
   pinMode(pinB, INPUT_PULLUP);      // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
   attachInterrupt(0, PinA, RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   attachInterrupt(1, PinB, RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
-  strip.begin();
-  strip.show();
-  strip.setPixelColor(0, strip.Color(0, 0, 0));
-  strip.show();
+  ws2812_init();
   black();
   readEEPROM();
   // Initialize feedforward based on current Setpoint
-  calculated_power = calc_maintain_pow(setpointToFloat(Setpoint));
+  calculated_power = calc_maintain_curve(setpointToFloat(Setpoint));
 }
 
 void manual_mode()
@@ -1114,8 +1212,16 @@ void set_m()
   lcd.clear();
   PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0);
   lcd.clear();
-  emafilter = modify("Pipeline Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
+  emafilter = modify("EMA Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
+
   lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(F("Curve type:"));
+  lcd.setCursor(0,1);
+  lcd.print(MAINT_CURVE_NAMES[MAINT_CURVE]);
+  MAINT_CURVE = (uint8_t)selector(MAINT_CURVE, 0, 3, 1, 0, 13, 1);
+  lcd.clear();
+
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
   lcd.setCursor(0, 1);
@@ -1175,23 +1281,39 @@ void set_m()
   lcd.setCursor(0, 0);
   lcd.print(F("Power Curve Setup"));
 
-  // Coefficient A avec plus de précision et validation
-  float newA = modify("Coeff. A (x0.0001)", MAINT_A * 10000, 1, 10000, 1, "", 0);
-  MAINT_A = newA / 10000.0;
-
-  // Coefficient B avec plus de précision et validation
-  float newB = modify("Coeff. B (x0.0001)", MAINT_B * 10000, 1, 10000, 1, "", 0);
-  MAINT_B = newB / 10000.0;
-
-  // Coefficient C avec validation
-  MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
+  if (MAINT_CURVE == 0)
+  {
+    float newA = modify("Coeff. A (x0.0001)", MAINT_A * 10000, 1, 10000, 1, "", 0);
+    MAINT_A = newA / 10000.0;
+    float newB = modify("Coeff. B (x0.0001)", MAINT_B * 10000, 1, 10000, 1, "", 0);
+    MAINT_B = newB / 10000.0;
+    MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
+  }
+  else if (MAINT_CURVE == 1)
+  {
+    MAINT_A = modify("Linear slope", MAINT_A, 0.0, 10.0, 0.1, "", 1);
+    MAINT_B = modify("Linear bias", MAINT_B, -100.0, 100.0, 0.1, "", 1);
+    MAINT_C = 0.0f;
+  }
+  else if (MAINT_CURVE == 2)
+  {
+    MAINT_A = modify("Quad A", MAINT_A, 0.0, 0.1, 0.001, "", 3);
+    MAINT_B = modify("Quad B", MAINT_B, -1.0, 1.0, 0.01, "", 2);
+    MAINT_C = modify("Quad C", MAINT_C, -10.0, 50.0, 0.1, "", 1);
+  }
+  else if (MAINT_CURVE == 3)
+  {
+    MAINT_A = modify("Power A", MAINT_A, 0.0, 10.0, 0.1, "", 1);
+    MAINT_B = modify("Power B", MAINT_B, 0.0, 10.0, 0.1, "", 1);
+    MAINT_C = modify("Offset C", MAINT_C, 0.1, 20.0, 0.1, "", 1);
+  }
 
   // Test de validité et correction si nécessaire
   if (MAINT_A <= 0.0f || isnan(MAINT_A))
     MAINT_A = 0.01455f;
   if (MAINT_B <= 0.0f || isnan(MAINT_B))
-    MAINT_B = 0.08593f;
-  if (MAINT_C <= 0.0f || isnan(MAINT_C))
+    MAINT_B = (MAINT_CURVE == 0) ? 0.08593f : 0.0f;
+  if (MAINT_CURVE == 0 && (MAINT_C <= 0.0f || isnan(MAINT_C)))
     MAINT_C = 6.8386f;
 
   // Affichage des valeurs finales pour confirmation
@@ -1326,11 +1448,9 @@ void buttonstate()
 }
 void red()
 {
-  strip.setPixelColor(0, strip.Color(25, 0, 0)); // Rouge
-  strip.show();
+  ws2812_show(25, 0, 0); // Rouge
 }
 void black()
 {
-  strip.setPixelColor(0, strip.Color(0, 0, 0)); // noir
-  strip.show();
+  ws2812_show(0, 0, 0); // noir
 }
