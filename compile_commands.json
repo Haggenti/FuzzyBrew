@@ -1,0 +1,242 @@
+[
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/CDC.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/CDC.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/CDC.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/CDC.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/HardwareSerial.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/HardwareSerial.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/HardwareSerial0.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial0.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial0.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/HardwareSerial0.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/HardwareSerial1.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial1.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial1.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/HardwareSerial1.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/HardwareSerial2.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial2.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial2.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/HardwareSerial2.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/HardwareSerial3.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial3.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/HardwareSerial3.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/HardwareSerial3.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/IPAddress.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/IPAddress.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/IPAddress.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/IPAddress.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/PluggableUSB.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/PluggableUSB.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/PluggableUSB.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/PluggableUSB.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/Print.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Print.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Print.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/Print.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/Stream.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Stream.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Stream.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/Stream.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/Tone.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Tone.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/Tone.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/Tone.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/USBCore.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/USBCore.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/USBCore.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/USBCore.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/WInterrupts.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WInterrupts.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WInterrupts.c",
+        "output": ".pio/build/nano/FrameworkArduino/WInterrupts.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/WMath.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WMath.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WMath.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/WMath.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/WString.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WString.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/WString.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/WString.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/abi.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/abi.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/abi.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/abi.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/hooks.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/hooks.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/hooks.c",
+        "output": ".pio/build/nano/FrameworkArduino/hooks.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/main.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/main.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/main.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/main.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/FrameworkArduino/new.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/new.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/new.cpp",
+        "output": ".pio/build/nano/FrameworkArduino/new.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/wiring.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring.c",
+        "output": ".pio/build/nano/FrameworkArduino/wiring.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/wiring_analog.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_analog.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_analog.c",
+        "output": ".pio/build/nano/FrameworkArduino/wiring_analog.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/wiring_digital.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_digital.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_digital.c",
+        "output": ".pio/build/nano/FrameworkArduino/wiring_digital.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -mmcu=atmega328p -x assembler-with-cpp -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs -c -o .pio/build/nano/FrameworkArduino/wiring_pulse.S.o /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_pulse.S",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_pulse.S",
+        "output": ".pio/build/nano/FrameworkArduino/wiring_pulse.S.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/wiring_pulse.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_pulse.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_pulse.c",
+        "output": ".pio/build/nano/FrameworkArduino/wiring_pulse.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/FrameworkArduino/wiring_shift.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_shift.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino/wiring_shift.c",
+        "output": ".pio/build/nano/FrameworkArduino/wiring_shift.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/libc20/OneWire/OneWire.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I.pio/libdeps/nano/OneWire -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs .pio/libdeps/nano/OneWire/OneWire.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/OneWire/OneWire.cpp",
+        "output": ".pio/build/nano/libc20/OneWire/OneWire.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/libb1e/DallasTemperature/DallasTemperature.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I.pio/libdeps/nano/DallasTemperature -I.pio/libdeps/nano/OneWire -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs .pio/libdeps/nano/DallasTemperature/DallasTemperature.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/DallasTemperature/DallasTemperature.cpp",
+        "output": ".pio/build/nano/libb1e/DallasTemperature/DallasTemperature.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/lib6a8/TM1637_RT/TM1637.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I.pio/libdeps/nano/TM1637_RT -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs .pio/libdeps/nano/TM1637_RT/TM1637.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/TM1637_RT/TM1637.cpp",
+        "output": ".pio/build/nano/lib6a8/TM1637_RT/TM1637.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/lib083/Wire/Wire.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src/Wire.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src/Wire.cpp",
+        "output": ".pio/build/nano/lib083/Wire/Wire.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o .pio/build/nano/lib083/Wire/utility/twi.c.o -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs /home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src/utility/twi.c",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src/utility/twi.c",
+        "output": ".pio/build/nano/lib083/Wire/utility/twi.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/lib3ad/I2C_LCD/I2C_LCD.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I.pio/libdeps/nano/I2C_LCD -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs .pio/libdeps/nano/I2C_LCD/I2C_LCD.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/I2C_LCD/I2C_LCD.cpp",
+        "output": ".pio/build/nano/lib3ad/I2C_LCD/I2C_LCD.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/lib641/Blinkenlight/BaseBlinker.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -I.pio/libdeps/nano/Blinkenlight/src -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs .pio/libdeps/nano/Blinkenlight/src/BaseBlinker.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Blinkenlight/src/BaseBlinker.cpp",
+        "output": ".pio/build/nano/lib641/Blinkenlight/BaseBlinker.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o \".pio/build/nano/lib00f/Adafruit NeoPixel/Adafruit_NeoPixel.cpp.o\" -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/Adafruit_NeoPixel.cpp\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/Adafruit_NeoPixel.cpp",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/Adafruit_NeoPixel.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o \".pio/build/nano/lib00f/Adafruit NeoPixel/Adafruit_Neopixel_RP2.cpp.o\" -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/Adafruit_Neopixel_RP2.cpp\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/Adafruit_Neopixel_RP2.cpp",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/Adafruit_Neopixel_RP2.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o \".pio/build/nano/lib00f/Adafruit NeoPixel/esp.c.o\" -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/esp.c\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/esp.c",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/esp.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o \".pio/build/nano/lib00f/Adafruit NeoPixel/esp8266.c.o\" -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/esp8266.c\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/esp8266.c",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/esp8266.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o \".pio/build/nano/lib00f/Adafruit NeoPixel/kendyte_k210.c.o\" -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/kendyte_k210.c\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/kendyte_k210.c",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/kendyte_k210.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-gcc -o \".pio/build/nano/lib00f/Adafruit NeoPixel/psoc6.c.o\" -c -std=gnu11 -fno-fat-lto-objects -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs \".pio/libdeps/nano/Adafruit NeoPixel/psoc6.c\"",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": ".pio/libdeps/nano/Adafruit NeoPixel/psoc6.c",
+        "output": ".pio/build/nano/lib00f/Adafruit NeoPixel/psoc6.c.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/src/EMAFilter.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -Iinclude -Isrc -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I.pio/libdeps/nano/Blinkenlight/src -I.pio/libdeps/nano/I2C_LCD -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src -I.pio/libdeps/nano/TM1637_RT -I.pio/libdeps/nano/DallasTemperature -I.pio/libdeps/nano/OneWire -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs src/EMAFilter.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "src/EMAFilter.cpp",
+        "output": ".pio/build/nano/src/EMAFilter.cpp.o"
+    },
+    {
+        "command": "/home/joe/.platformio/packages/toolchain-atmelavr/bin/avr-g++ -o .pio/build/nano/src/main.cpp.o -c -fno-exceptions -fno-threadsafe-statics -fpermissive -std=gnu++11 -mmcu=atmega328p -Os -Wall -ffunction-sections -fdata-sections -flto -DPLATFORMIO=60118 -DARDUINO_AVR_NANO -DF_CPU=16000000L -DARDUINO_ARCH_AVR -DARDUINO=10808 -Iinclude -Isrc -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src \"-I.pio/libdeps/nano/Adafruit NeoPixel\" -I.pio/libdeps/nano/Blinkenlight/src -I.pio/libdeps/nano/I2C_LCD -I/home/joe/.platformio/packages/framework-arduino-avr/libraries/Wire/src -I.pio/libdeps/nano/TM1637_RT -I.pio/libdeps/nano/DallasTemperature -I.pio/libdeps/nano/OneWire -I/home/joe/.platformio/packages/framework-arduino-avr/cores/arduino -I/home/joe/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs src/main.cpp",
+        "directory": "/home/joe/Documents/PlatformIO/Projects/Beer",
+        "file": "src/main.cpp",
+        "output": ".pio/build/nano/src/main.cpp.o"
+    }
+]

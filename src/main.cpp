@@ -1,6 +1,6 @@
 // Version 2.5
 // Incrémentez le numéro de version à chaque commit
-#define VERSION "2.5"
+#define VERSION "2.6"
 // #pragma GCC optimize("Os") // code optimisation controls - "O2" & "O3" code performance, "Os" code size
 #include <Arduino.h>
 #include <Wire.h>
@@ -133,6 +133,8 @@ uint32_t lastSampleTime = 0;
 unsigned delayInMillis = 500; // Wait time for temp reading
 float T_filtre, dT_dt, dT_dt_prev = 0.0f;
 float dt = 0.75f; // intervalle entre mesures
+float lp_temp = NAN; // état interne du filtre passe-bas
+constexpr float LP_TAU = 5.0f; // constante de temps du passe-bas en secondes
 
 // ==================== PWM & CONTROL SETTINGS ====================
 float OVERSHOOT_X = -0.1;
@@ -171,7 +173,7 @@ unsigned long last_rate_time = 0;
 float heat_rate = 0.0;
 
 // ==================== STATE VARIABLES ====================
-bool emafilter = true;
+uint8_t filter_mode = 2; // 0 = none, 1 = EMA filter, 2 = first-order low-pass
 bool click_prev = true;
 float push_time = 0.0;
 bool fineajust = 0;
@@ -232,8 +234,8 @@ void writeEEPROM()
   address += sizeof(PWM_NEAR_OFFSET);
   EEPROM.put(address, PWM_PERIOD);
   address += sizeof(PWM_PERIOD);
-  EEPROM.put(address, emafilter);
-  address += sizeof(emafilter);
+  EEPROM.put(address, filter_mode);
+  address += sizeof(filter_mode);
   EEPROM.put(address, MAINT_C);
   address += sizeof(MAINT_C);
 }
@@ -255,8 +257,8 @@ void readEEPROM()
   address += sizeof(PWM_NEAR_OFFSET);
   EEPROM.get(address, PWM_PERIOD);
   address += sizeof(PWM_PERIOD);
-  EEPROM.get(address, emafilter);
-  address += sizeof(emafilter);
+  EEPROM.get(address, filter_mode);
+  address += sizeof(filter_mode);
   EEPROM.get(address, MAINT_C);
   address += sizeof(MAINT_C);
 }
@@ -407,6 +409,36 @@ void print_space(byte sp)
     lcd.print(F(" "));
   }
 }
+
+inline void print_pwm_number(float value)
+{
+  const float rounded = roundf(value);
+  if (fabsf(value - rounded) < 0.05f)
+  {
+    lcd.print((int)rounded);
+  }
+  else
+  {
+    lcd.print(value, 1);
+  }
+}
+
+inline void print_pwm_line(float pwm_value, float offset)
+{
+  lcd.print(F("PWM : "));
+  print_pwm_number(pwm_value);
+  lcd.print(F("%"));
+  if (offset != 0.0f)
+  {
+    if (offset > 0.0f)
+      lcd.print(F(" (+"));
+    else
+      lcd.print(F(" ("));
+    print_pwm_number(offset);
+    lcd.print(F(")"));
+  }
+}
+
 void print_deg()
 {
   lcd.print(F("\xDF"
@@ -475,7 +507,8 @@ void factory_rst()
   PWM_FAR = 90;
   PWM_NEAR_OFFSET = 0.0;
   PWM_PERIOD = 5000;
-  emafilter = true;
+  filter_mode = 2;
+  lp_temp = NAN;
   MAINT_C = 20.0f;
   delay(1000);
   lcd.print(F("OK!"));
@@ -559,11 +592,9 @@ void ssr_mgmt()
   // Mise à jour de l'affichage PWM uniquement si changement
   if (old_pwm != pwm)
   {
-    lcd.setCursor(5, 1);
-    print_space(6);
-  lcd.setCursor(5, 1);
-  lcd.print(pwm, 1);
-  lcd.print(F("%"));
+    lcd.setCursor(0, 1);
+    lcd.clearEOL();
+    print_pwm_line(pwm, PWM_NEAR_OFFSET);
     old_pwm = pwm;
     onPWM_PERIOD = (pwm * PWM_PERIOD) / 100; // Calcul direct du temps ON
   }
@@ -640,10 +671,7 @@ void setpoint_mgmt()
 void restore_disp_man()
 {
   lcd.clear();
-  lcd.setCursor(0, 1);
-  lcd.print(F("PWM: "));
-  lcd.print(pwm, 1);
-  lcd.print(F("%"));
+  print_pwm_line(pwm, PWM_NEAR_OFFSET);
   lcd.setCursor(0, 3);
   lcd.print(F("00:00:00"));
   lcd.setCursor(0, 0);
@@ -658,7 +686,7 @@ void dis_mode()
   {
     restore_disp_man();
     axcel = 1;
-    lcd.setCursor(13, 1);
+    lcd.setCursor(13, 0);
     lcd.print(F("MASH  "));
     lcd.setCursor(0, 2);
     lcd.clearEOL();
@@ -668,7 +696,7 @@ void dis_mode()
     axcel = 1;
     lcd.setCursor(0, 0);
     print_space(11);
-    lcd.setCursor(13, 1);
+    lcd.setCursor(13, 0);
     lcd.print(F("BOIL  "));
     lcd.setCursor(0, 2);
     lcd.clearEOL();
@@ -679,7 +707,7 @@ void dis_mode()
     restore_disp_man();
     lcd.setCursor(0, 0);
     lcd.print(F("Standby... "));
-    lcd.setCursor(13, 1);
+    lcd.setCursor(13, 0);
     lcd.print(F("IDLE   "));
   }
 }
@@ -800,19 +828,32 @@ void read_temp()
           displayTemp(temperature);
         }
 
-        if (emafilter)
-        {
+              {
           // Compute measured dt (seconds) between filter updates
           static unsigned long lastFilterTime = 0;
           unsigned long nowt = millis();
           float dt_meas = (lastFilterTime == 0) ? dt : (float)(nowt - lastFilterTime) / 1000.0f;
           lastFilterTime = nowt;
-          filt.process(rawTemp, Setpoint, dt_meas, T_filtre, dT_dt);
-          temperature = (int16_t)roundf(T_filtre * 10.0f);
-          dT_dt_prev = dT_dt;
+
+          if (filter_mode == 1)
+          {
+            filt.process(rawTemp, Setpoint, dt_meas, T_filtre, dT_dt);
+            temperature = (int16_t)roundf(T_filtre * 10.0f);
+            dT_dt_prev = dT_dt;
+          }
+          else if (filter_mode == 2)
+          {
+            if (isnan(lp_temp))
+              lp_temp = rawTemp;
+            float alpha = dt_meas / (LP_TAU + dt_meas);
+            lp_temp = alpha * rawTemp + (1.0f - alpha) * lp_temp;
+            temperature = (int16_t)roundf(lp_temp * 10.0f);
+          }
+          else
+          {
+            temperature = (int16_t)roundf(rawTemp * 10.0f);
+          }
         }
-        else
-          temperature = (int16_t)roundf(rawTemp * 10.0f);
 
         if (test_mode)
           temperature = 500;
@@ -1199,8 +1240,10 @@ void set_m()
   lcd.clear();
   PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0);
   lcd.clear();
-  emafilter = modify("EMA Filter", emafilter, 0, 1, 1, " (no:0 - yes:1)", 0);
-
+  filter_mode = (uint8_t)modify("Filter mode 0:none", filter_mode, 0, 2, 1, " 0/1/2", 0);
+  lcd.clear();
+  lcd.print(F("0:none 1:EMA 2:LPF"));
+  delay(1000);
   lcd.clear();
 
   lcd.setCursor(0, 0);

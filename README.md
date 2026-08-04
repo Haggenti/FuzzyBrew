@@ -7,7 +7,7 @@ An intelligent temperature control system for beer brewing, based on Arduino wit
 - Compatible with other volumes (20-100L recommended)
 - Heating element control only
 - Pump control not included (manual operation required)
-- Tested with 3500W heating element
+- Tested with 3200W heating element
 
 ## ⚠️ Safety Warning
 
@@ -22,7 +22,6 @@ Required safety measures:
 - Use proper electrical isolation and grounding
 - Install adequate circuit breakers
 - Use waterproof enclosures (minimum IP54)
-- Install emergency stop button
 - Keep electronics and high voltage separated
 - Use food-grade temperature probe
 - Regular safety checks of all components
@@ -49,10 +48,7 @@ The user assumes all responsibility for:
 - Probe error protection
 
 ### Operating Modes
-- **Manual Mode**: Direct temperature control with fine adjustment
-- **Auto Mode**: Automated brewing steps sequence
-- **Preset Mode**: Quick temperature presets selection
+- **Brew Mode**: Direct temperature control with fine adjustment
+- **Pwm Mode**: Direct PWM selection (usefull for boil)
 - **Standby Mode**: Temperature monitoring without heating
 
-## Calibration script
-The repository includes `calibrate.py`, which can fit several models to your measured temperature/PWM data, choose the best curve automatically, and show fit quality metrics like RMSE and R². Run it interactively or with `python calibrate.py --file measurements.csv`.

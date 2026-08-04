@@ -10,8 +10,8 @@ The system uses fuzzy logic based on 4 rules:
 
 2. **Setpoint Control Zone** (-0.1°C < Δ < 0.1°C)
    - Power = Maintenance Power + Ajustable Offset
-   - Uses computed logarithmic curve for stable temperature
-   - Manual fine-tuning available
+   - Uses linear maintenance model for stable temperature
+   - Manual fine-tuning available (Offset)
 
 3. **Ramp Zone** (0.1°C < Δ < 1.5°C)
    - Power increases smoothly to maximum + Ajustable Offset
@@ -38,12 +38,12 @@ Where:
 ### Basic Navigation
 - **Rotation**: Adjust values
 - **Single Click**: Confirm/Select
-- **Long push**: Secondary menu/Fine adjustment
+- **Long push**: Offset adjustment
 - **Very Long push**: Return to main menu
 
 ### Main Modes
 
-#### 1. Manual Mode
+#### 1. Brew Mode
 - Displays current and target temperatures
 - Direct temperature setpoint adjustment
 - Fine mode (F) for precise power adjustment : offset tweaking
@@ -148,19 +148,7 @@ At startup, the controller captures ambient temperature and uses a line defined 
 2. Under `Power Curve Setup`, set the PWM target value for 78°C.
 3. A default value of `20%` is provided.
 
-This simplified model removes the need for external curve-fitting utilities; only the target PWM at 78°C is required.
 
 ### Verification
 1. Test several temperatures
-2. PWM should stabilize automatically
-3. Fine adjustment should require minimal offset tweaking (±1%)
-
-### Troubleshooting
-- If curve doesn't fit well :
-  * Start again, and take more measurement points
-  * Ensure system was stable at each point
-  * Check for external factors (drafts, lid position)
-- If power seems too high/low:
-  * Verify your volume matches calibration volume
-  * Check thermal insulation
-  * Consider ambient temperature effects
+2. Fine adjustment should require minimal offset tweaking (±1%)
