@@ -1,9 +1,10 @@
 import argparse
 import csv
 import sys
+import warnings
 
 import numpy as np
-from scipy.optimize import curve_fit
+from scipy.optimize import OptimizeWarning, curve_fit
 import matplotlib.pyplot as plt
 
 
@@ -39,7 +40,9 @@ def rmse(y, y_pred):
 
 def try_fit(func, x, y, p0, bounds, name):
     try:
-        popt, _ = curve_fit(func, x, y, p0=p0, bounds=bounds, maxfev=10000)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", OptimizeWarning)
+            popt, _ = curve_fit(func, x, y, p0=p0, bounds=bounds, maxfev=10000)
         y_pred = func(x, *popt)
         return {
             "name": name,

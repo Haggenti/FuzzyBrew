@@ -125,7 +125,6 @@ int16_t delta = 0, old_delta = -32768;
 float pwm = 0.0f, old_pwm = -1.0f;
 
 // Sampling settings
-constexpr uint32_t SAMPLE_PERIOD = 500;
 unsigned lastTempRequest = 0;
 uint32_t lastSampleTime = 0;
 unsigned delayInMillis = 500; // Wait time for temp reading
@@ -158,7 +157,6 @@ uint8_t encbutton_state;
 unsigned long buttontick = 0;
 const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
 const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "BACK", NULL};
-// const char *menu3[] = {"START", "BACK", "EXIT", NULL}; // Unused
 const char *confirm_menu[] = {"YES", "NO", NULL};
 
 // ==================== TIMER VARIABLES ====================
@@ -184,7 +182,6 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress tempDeviceAddress;
 I2C_LCD lcd(39);
-//EMAFilter tempFilter(0.2); // Initial alpha = 0.2
 TM1637 tm;
 Blinkenlight buzz(BUZZER_PIN);
 
@@ -562,7 +559,7 @@ void check_counter()
   }
 
   // Vérifie la stabilité de la température
-  if (abs(delta) < NEAR_LIMIT)
+  if (abs(delta) <= (int16_t)(NEAR_LIMIT * 10.0f + 0.5f))
   {
     if (!wasStable)
     {
