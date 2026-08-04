@@ -1,5 +1,3 @@
-// Version 2.5
-// Incrémentez le numéro de version à chaque commit
 #define VERSION "2.6"
 // #pragma GCC optimize("Os") // code optimisation controls - "O2" & "O3" code performance, "Os" code size
 #include <Arduino.h>
@@ -9,6 +7,7 @@
 #include <DallasTemperature.h>
 #include "TM1637.h"
 #include <Blinkenlight.h>
+#include <Adafruit_NeoPixel.h>
 #include <EEPROM.h>
 
 inline void swap_vals(float &x, float &y)
@@ -40,68 +39,7 @@ inline void swap_vals(float &x, float &y)
 constexpr uint8_t LED_PIN = 11;
 #define NUM_LEDS 1
 
-#define LED_PORT PORTB
-#define LED_DDR DDRB
-#define LED_MASK _BV(PORTB3)
-
-inline void ws2812_init()
-{
-  LED_DDR |= LED_MASK;
-  LED_PORT &= ~LED_MASK;
-}
-
-static inline void ws2812_sendBit(bool bitVal)
-{
-  if (bitVal)
-  {
-    LED_PORT |= LED_MASK;
-    asm volatile(
-        "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t"
-        :
-        :
-        :);
-    LED_PORT &= ~LED_MASK;
-    asm volatile(
-        "nop\n\t" "nop\n\t"
-        :
-        :
-        :);
-  }
-  else
-  {
-    LED_PORT |= LED_MASK;
-    asm volatile(
-        "nop\n\t" "nop\n\t" "nop\n\t"
-        :
-        :
-        :);
-    LED_PORT &= ~LED_MASK;
-    asm volatile(
-        "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t"
-        :
-        :
-        :);
-  }
-}
-
-static inline void ws2812_sendByte(uint8_t byte)
-{
-  for (uint8_t bit = 0; bit < 8; ++bit)
-  {
-    ws2812_sendBit(byte & 0x80);
-    byte <<= 1;
-  }
-}
-
-static inline void ws2812_show(uint8_t red, uint8_t green, uint8_t blue)
-{
-  noInterrupts();
-  ws2812_sendByte(green);
-  ws2812_sendByte(red);
-  ws2812_sendByte(blue);
-  interrupts();
-  delayMicroseconds(80);
-}
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // ==================== HARDWARE PIN DEFINITIONS ====================
 constexpr uint8_t PIN_BTN = 4;
@@ -140,12 +78,11 @@ constexpr float LP_TAU = 5.0f; // constante de temps du passe-bas en secondes
 float OVERSHOOT_X = -0.1;
 float NEAR_LIMIT = 0.1;
 float FAR_LIMIT = 1.5;
-float PWM_FAR = 90.0, PWM_NEAR_OFFSET = 0.0, PWM_N = 0.0;
+float PWM_FAR = 95.0, PWM_NEAR_OFFSET = 0.0, PWM_N = 0.0;
 uint32_t PWM_PERIOD = 5000;
 bool pwmstate = false;
 uint32_t onPWM_PERIOD = 0;
-// Ambient temperature (tenths of °C). Captured at startup for diagnostics/feedforward.
-int16_t ambient_temp = 0;
+int16_t ambient_temp = 0; // Ambient temperature (tenths of °C). Captured at startup
 float MAINT_C = 20.0f;    // PWM target at 78°C for ambient-linear feedforward
 
 inline float setpointToFloat(int16_t sp)
@@ -186,6 +123,27 @@ DeviceAddress tempDeviceAddress;
 I2C_LCD lcd(39);
 TM1637 tm;
 Blinkenlight buzz(BUZZER_PIN);
+
+static inline void print_space(byte sp)
+{
+  for (size_t i = 0; i < sp; i++)
+  {
+    lcd.print(F(" "));
+  }
+}
+
+inline void print_pwm_number(float value)
+{
+  const float rounded = roundf(value);
+  if (fabsf(value - rounded) < 0.05f)
+  {
+    lcd.print((int)rounded);
+  }
+  else
+  {
+    lcd.print(value, 1);
+  }
+}
 
 inline void printTenths(int16_t value)
 {
@@ -402,32 +360,12 @@ void resetSensor()
   }
 }
 
-void print_space(byte sp)
-{
-  for (size_t i = 0; i < sp; i++)
-  {
-    lcd.print(F(" "));
-  }
-}
-
-inline void print_pwm_number(float value)
-{
-  const float rounded = roundf(value);
-  if (fabsf(value - rounded) < 0.05f)
-  {
-    lcd.print((int)rounded);
-  }
-  else
-  {
-    lcd.print(value, 1);
-  }
-}
-
 inline void print_pwm_line(float pwm_value, float offset)
 {
   lcd.print(F("PWM : "));
   print_pwm_number(pwm_value);
   lcd.print(F("%"));
+  lcd.setCursor(11, 1);
   if (offset != 0.0f)
   {
     if (offset > 0.0f)
@@ -437,6 +375,14 @@ inline void print_pwm_line(float pwm_value, float offset)
     print_pwm_number(offset);
     lcd.print(F(")"));
   }
+}
+
+void update_pwm_display()
+{
+  lcd.setCursor(0, 1);
+  print_space(LCD_COLS);
+  lcd.setCursor(0, 1);
+  print_pwm_line(pwm, PWM_NEAR_OFFSET);
 }
 
 void print_deg()
@@ -503,8 +449,8 @@ void factory_rst()
   offset_temp = 0.0;
   OVERSHOOT_X = -0.1;
   NEAR_LIMIT = 0.1;
-  FAR_LIMIT = 1.5;
-  PWM_FAR = 90;
+  FAR_LIMIT = 1.3;
+  PWM_FAR = 95;
   PWM_NEAR_OFFSET = 0.0;
   PWM_PERIOD = 5000;
   filter_mode = 2;
@@ -592,11 +538,15 @@ void ssr_mgmt()
   // Mise à jour de l'affichage PWM uniquement si changement
   if (old_pwm != pwm)
   {
-    lcd.setCursor(0, 1);
-    lcd.clearEOL();
-    print_pwm_line(pwm, PWM_NEAR_OFFSET);
+    update_pwm_display();
     old_pwm = pwm;
     onPWM_PERIOD = (pwm * PWM_PERIOD) / 100; // Calcul direct du temps ON
+    if (pwm <= 0.0f)
+    {
+      digitalWrite(SSR, LOW);
+      black();
+      pwmstate = false;
+    }
   }
 
   // Gestion du cycle PWM
@@ -637,7 +587,7 @@ float pwm_cal()
   return_value = (error <= OVERSHOOT_X)  ? 0.0f
                  : (error <= NEAR_LIMIT) ? PWM_N
                  : (error < FAR_LIMIT)   ? PWM_N + ramp
-                                        : PWM_FAR;
+                                        : PWM_FAR + PWM_NEAR_OFFSET;
 
   return return_value;
 }
@@ -647,7 +597,7 @@ void setpoint_mgmt()
 {
   if (encPos != 0)
   {
-    Setpoint = constrain((int16_t)(Setpoint + (10 * encPos)), MIN_SETPOINT_T, MAX_SETPOINT_T);
+    Setpoint = constrain((int16_t)(Setpoint +  encPos), MIN_SETPOINT_T, MAX_SETPOINT_T);
     encPos = 0;
 
     lcd.setCursor(5, 0);
@@ -671,6 +621,7 @@ void setpoint_mgmt()
 void restore_disp_man()
 {
   lcd.clear();
+  lcd.setCursor(0, 1);
   print_pwm_line(pwm, PWM_NEAR_OFFSET);
   lcd.setCursor(0, 3);
   lcd.print(F("00:00:00"));
@@ -686,20 +637,15 @@ void dis_mode()
   {
     restore_disp_man();
     axcel = 1;
-    lcd.setCursor(13, 0);
-    lcd.print(F("MASH  "));
-    lcd.setCursor(0, 2);
-    lcd.clearEOL();
+    lcd.setCursor(16, 0);
+    lcd.print(F("MASH"));
   }
   else if (mash_mode == 2)
   {
     axcel = 1;
-    lcd.setCursor(0, 0);
-    print_space(11);
-    lcd.setCursor(13, 0);
-    lcd.print(F("BOIL  "));
-    lcd.setCursor(0, 2);
-    lcd.clearEOL();
+    restore_disp_man();
+    lcd.setCursor(16, 0);
+    lcd.print(F("BOIL"));
   }
   else if (mash_mode == 3)
   {
@@ -707,8 +653,8 @@ void dis_mode()
     restore_disp_man();
     lcd.setCursor(0, 0);
     lcd.print(F("Standby... "));
-    lcd.setCursor(13, 0);
-    lcd.print(F("IDLE   "));
+    lcd.setCursor(16, 0);
+    lcd.print(F("IDLE "));
   }
 }
 
@@ -916,8 +862,9 @@ void rot_man()
       lcd.print(F("Offset: "));
       lcd.print(PWM_NEAR_OFFSET, 1);
       pwm = pwm_cal();
-      lcd.setCursor(5, 1);
-      lcd.print(pwm, 1);
+      lcd.setCursor(0, 1);
+      //lcd.clearEOL();
+      print_pwm_line(pwm, PWM_NEAR_OFFSET);
     }
     // keep pressed
     fineajust = 1;
@@ -1092,11 +1039,6 @@ void setup(void)
   // Wire.setClock(100000);
   lcd.begin(20, 4);
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(F("Version "));
-  lcd.print(VERSION);
-  delay(1000);
-  lcd.clear();
   lcd.createChar(1, delta_char);
   lcd.createChar(2, arrowUp);
   lcd.createChar(3, arrowDown);
@@ -1112,7 +1054,9 @@ void setup(void)
   pinMode(pinB, INPUT_PULLUP);      // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
   attachInterrupt(0, PinA, RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   attachInterrupt(1, PinB, RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
-  ws2812_init();
+  strip.begin();
+  strip.setBrightness(50);
+  strip.show();
   black();
   readEEPROM();
   // Initialize feedforward based on current Setpoint
@@ -1173,12 +1117,15 @@ void manual_mode()
   ssr_mgmt();
 }
 
-float modify(const String title, float variable, float min, float max, float inc, const char *unit, const byte decimals)
+float modify(const String title, float variable, float min, float max, float inc, const char *unit, const byte decimals,const byte col, const byte row, bool tenths=0)
 {
-  lcd.setCursor(0, 0);
+  lcd.setCursor(col, row);
   lcd.print(title);
-  lcd.setCursor(0, 1);
-  lcd.print(variable, decimals);
+  lcd.setCursor(col, row+1);
+  if (tenths)
+    {lcd.print(variable/10.0, decimals);}
+  else
+  {lcd.print(variable, decimals);}
   lcd.print(unit);
 
   buttonstate();
@@ -1192,10 +1139,17 @@ float modify(const String title, float variable, float min, float max, float inc
 
     if (encPos != 0)
     {
-      lcd.setCursor(0, 1);
+      lcd.setCursor(col, row+1);
       print_space(8);
-      lcd.setCursor(0, 1);
-      lcd.print(variable, decimals);
+      lcd.setCursor(col, row+1);
+      if (tenths)
+      {
+        lcd.print(variable/10.0, decimals);
+      }
+      else {
+            lcd.print(variable, decimals);
+
+      }
       lcd.print(unit);
       encPos = 0;
     }
@@ -1234,17 +1188,21 @@ void set_m()
 {
   lcd.blink();
   lcd.clear();
-  offset_temp = modify("Temperature offset", offset_temp, -3, 3, 0.1, "\xDF"
-                                                                      "C",
-                       1);
+  offset_temp = modify("Temperature offset", offset_temp, -3, 3, 0.1, "\xDF""C",1,0,0);
   lcd.clear();
-  PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0);
+  PWM_PERIOD = modify("PWM period", PWM_PERIOD, 1000, 8000, 100, " ms", 0,0,0);
   lcd.clear();
-  filter_mode = (uint8_t)modify("Filter mode 0:none", filter_mode, 0, 2, 1, " 0/1/2", 0);
+  lcd.setCursor(0,0);
+  lcd.print(F("Filter mode"));
+  lcd.setCursor(0,1);
+  lcd.print(F("none(0)"));
+  lcd.setCursor(0,2);
+  lcd.print(F("EMA(1) LPF(2)"));
+
+
+  filter_mode = (uint8_t)modify("", filter_mode, 0, 2, 1, "", 0, 0, 2);
   lcd.clear();
-  lcd.print(F("0:none 1:EMA 2:LPF"));
-  delay(1000);
-  lcd.clear();
+
 
   lcd.setCursor(0, 0);
   lcd.print(F("Rule 1:"));
@@ -1309,21 +1267,16 @@ void set_m()
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Ambient = 0% PWM"));
-  lcd.setCursor(0, 1);
-  lcd.print(F("78°C => PWM:"));
-  MAINT_C = modify("PWM at 78°C", MAINT_C, 0.0, 100.0, 0.1, " %", 1);
+
+  MAINT_C = modify("Set PWM at 78", MAINT_C, 0.0, 100.0, 0.1, " %", 1, 0, 1);
+  lcd.clear();
+  ambient_temp = modify("Ambient Temp", ambient_temp, 0, 400, 1, "\xDF"
+                                                                      "C", 1, 0, 0,1);
 
   if (MAINT_C < 0.0f || isnan(MAINT_C))
     MAINT_C = 20.0f;
 
-  // Affichage des valeurs finales pour confirmation
-  lcd.clear();
-  lcd.print(F("Values set to:"));
-  lcd.setCursor(0, 1);
-  lcd.print(F("PWM@78C:"));
-  lcd.print(MAINT_C, 1);
-  delay(2000);
-
+  
   lcd.noBlink();
   menu_select = 0;
 }
@@ -1442,9 +1395,12 @@ void buttonstate()
 }
 void red()
 {
-  ws2812_show(25, 0, 0); // Rouge
+  strip.setPixelColor(0, strip.Color(255, 0, 0));
+  strip.show();
 }
+
 void black()
 {
-  ws2812_show(0, 0, 0); // noir
+  strip.setPixelColor(0, strip.Color(0, 0, 0));
+  strip.show();
 }
