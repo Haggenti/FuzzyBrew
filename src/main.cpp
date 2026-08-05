@@ -94,7 +94,7 @@ inline float setpointToFloat(int16_t sp)
 uint8_t menu_select = 0;
 uint8_t encbutton_state;
 unsigned long buttontick = 0;
-const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", NULL};
+const char *menu1[] = {"BREW", "SETTINGS", "MEMORY", "ABOUT",NULL};
 const char *menu2[] = {"LOAD", "SAVE", "DEFAULTS", "BACK", NULL};
 const char *confirm_menu[] = {"YES", "NO", NULL};
 
@@ -137,7 +137,7 @@ inline void print_pwm_number(float value)
   const float rounded = roundf(value);
   if (fabsf(value - rounded) < 0.05f)
   {
-    lcd.print((int)rounded);
+    lcd.print(value,1);
   }
   else
   {
@@ -362,25 +362,30 @@ void resetSensor()
 
 inline void print_pwm_line(float pwm_value, float offset)
 {
-  lcd.print(F("PWM : "));
+  //lcd.print(F("PWM: "));
+  lcd.setCursor(5, 1);
+  lcd.print(F("     "));
+  lcd.setCursor(5, 1);
+
   print_pwm_number(pwm_value);
+  lcd.setCursor(10, 1);
   lcd.print(F("%"));
-  lcd.setCursor(11, 1);
-  if (offset != 0.0f)
+  if (offset >= 0.05f)
   {
-    if (offset > 0.0f)
-      lcd.print(F(" (+"));
-    else
-      lcd.print(F(" ("));
-    print_pwm_number(offset);
-    lcd.print(F(")"));
+      lcd.write(byte(2));
+  }
+  else if (offset<=-0.05f) {
+      lcd.write(byte(3));
+  
+  }
+  else {
+  lcd.print(F(" "));
   }
 }
-
 void update_pwm_display()
 {
   lcd.setCursor(0, 1);
-  print_space(LCD_COLS);
+  //print_space(LCD_COLS);
   lcd.setCursor(0, 1);
   print_pwm_line(pwm, PWM_NEAR_OFFSET);
 }
@@ -618,51 +623,18 @@ void setpoint_mgmt()
   pwm = pwm_cal();
 }
 
-void restore_disp_man()
+void dis_time(bool refresh=false)
 {
-  lcd.clear();
-  lcd.setCursor(0, 1);
-  print_pwm_line(pwm, PWM_NEAR_OFFSET);
-  lcd.setCursor(0, 3);
-  lcd.print(F("00:00:00"));
-  lcd.setCursor(0, 0);
-  lcd.print(F("Set: "));
-  printTenths(Setpoint);
-  print_deg();
-}
 
-void dis_mode()
-{
-  if (mash_mode == 1)
-  {
-    restore_disp_man();
-    axcel = 1;
-    lcd.setCursor(16, 0);
-    lcd.print(F("MASH"));
-  }
-  else if (mash_mode == 2)
-  {
-    axcel = 1;
-    restore_disp_man();
-    lcd.setCursor(16, 0);
-    lcd.print(F("BOIL"));
-  }
-  else if (mash_mode == 3)
-  {
-    axcel = 0;
-    restore_disp_man();
-    lcd.setCursor(0, 0);
-    lcd.print(F("Standby... "));
-    lcd.setCursor(16, 0);
-    lcd.print(F("IDLE "));
-  }
-}
-
-void dis_time()
-{
   old_s = s;
   old_m = m;
   old_h = h;
+    if (refresh)
+  {
+    old_s=99;
+    old_m=99;
+    old_h=99;
+  }
 
   timelapse = (millis() - chronostart) / 1000;
   h = timelapse / 3600;
@@ -693,6 +665,55 @@ void dis_time()
     lcd.print(s);
   }
 }
+
+
+
+void dis_mode()
+{
+  lcd.clear();
+  lcd.setCursor(0, 1);
+  lcd.print(F("PWM: "));
+  print_pwm_line(pwm, PWM_NEAR_OFFSET);
+  lcd.setCursor(0, 3);
+  dis_time(true);
+  //lcd.print(F("00:00:00"));
+  if (mash_mode!=2){
+  lcd.setCursor(0, 0);
+  lcd.print(F("Set: "));
+  printTenths(Setpoint);
+  print_deg();}
+
+
+
+
+  if (mash_mode == 1)
+  {
+    axcel = 1;
+    lcd.setCursor(16, 0);
+    lcd.print(F("MASH"));
+  }
+  else if (mash_mode == 2)
+  {
+    axcel = 1;
+    lcd.setCursor(0, 0);
+    lcd.print(F("Pwm Control"));
+    lcd.setCursor(16, 0);
+    lcd.print(F("BOIL"));
+    lcd.setCursor(11,1);
+    lcd.print(F(" "));
+  }
+  else if (mash_mode == 3)
+  {
+    axcel = 0;
+    lcd.setCursor(0, 0);
+    lcd.print(F("Standby... "));
+    lcd.setCursor(16, 0);
+    lcd.print(F("IDLE "));
+    print_pwm_line(pwm, offset_temp);
+  }
+}
+
+
 
 void boil_mgmt()
 {
@@ -732,10 +753,9 @@ void fine()
     }
     ssr_mgmt();
     encPos = 0;
-    lcd.setCursor(0, 2);
-    lcd.clearEOL();
-    lcd.setCursor(0, 2);
-    lcd.print(F("Offset: "));
+    lcd.setCursor(8, 2);
+    lcd.print(F("     "));
+    lcd.setCursor(8,2);
     lcd.print(PWM_NEAR_OFFSET, 1);
   }
 }
@@ -1055,7 +1075,7 @@ void setup(void)
   attachInterrupt(0, PinA, RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   attachInterrupt(1, PinB, RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
   strip.begin();
-  strip.setBrightness(50);
+  strip.setBrightness(20);
   strip.show();
   black();
   readEEPROM();
@@ -1183,10 +1203,24 @@ float selector(float variable, float min, float max, float inc, const byte decim
   return variable;
 }
 
+void about()
+{
+ lcd.clear();
+  lcd.print(F("Version: "));
+  lcd.print(VERSION);
+  lcd.setCursor(0, 1);
+  lcd.print(F("Uploaded: "));
+  lcd.setCursor(0,2);
+  lcd.print(__DATE__);
+  delay(4000);
+  menu_select = 0;
+}
+
 // ==================== SETTINGS MENU ====================
 void set_m()
-{
-  lcd.blink();
+
+{ 
+ 
   lcd.clear();
   offset_temp = modify("Temperature offset", offset_temp, -3, 3, 0.1, "\xDF""C",1,0,0);
   lcd.clear();
@@ -1323,7 +1357,6 @@ void main_menu()
   {
   case 0:
     menu_select = 1;
-    restore_disp_man();
     dis_mode();
     break;
   case 1:
@@ -1333,6 +1366,9 @@ void main_menu()
     menu_select = 3;
     memory_menu();
     break;
+  case 3:
+  menu_select= 4;
+  about();
   default:
     break;
   }
