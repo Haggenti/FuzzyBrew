@@ -64,6 +64,7 @@ int16_t prev_temp = 0, temperature = 0;
 float calculated_power = 0.0f;
 int16_t delta = 0, old_delta = -32768;
 float pwm = 0.0f, old_pwm = -1.0f;
+float pwm_before_sensor_error = 0.0f;
 
 // Sampling settings
 unsigned lastTempRequest = 0;
@@ -780,6 +781,7 @@ void read_temp()
         if (!error)
         { // Seulement à la première détection d'erreur
           error = true;
+          pwm_before_sensor_error = pwm;
           pwm = 0;
           static char err[] = "Err"; // Tableau de caractères modifiable
           tm.displayPChar(err);
@@ -790,6 +792,7 @@ void read_temp()
               if (error)
         { // Si on sort d'une erreur
           error = false;
+                pwm = pwm_before_sensor_error;
           resetSensor(); // Réinitialise une fois que le capteur est reconnu
           displayTemp(temperature);
         }
@@ -1112,7 +1115,12 @@ void manual_mode()
     dis_time();
 
   read_temp();
-  if (mash_mode == 1)
+  if (error)
+  {
+    // Keep every heating mode stopped until a valid temperature is available.
+    pwm = 0;
+  }
+  else if (mash_mode == 1)
   {
     if (fineajust)
     {
