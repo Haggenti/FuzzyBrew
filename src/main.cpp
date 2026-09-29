@@ -51,6 +51,7 @@ constexpr uint8_t SSR = 9;
 
 // ==================== COMMUNICATION SETTINGS ====================
 constexpr uint16_t SERIAL_BAUDRATE = 9600;
+constexpr uint32_t SENSOR_ERROR_BEEP_DELAY_MS = 5000;
 
 // ==================== TEMPERATURE SETTINGS ====================
 constexpr uint8_t TEMPERATURE_PRECISION = 11;
@@ -104,6 +105,8 @@ uint32_t chronostart = 0, timelapse = 0;
 uint8_t h = 0, m = 0, s = 0, old_s, old_m, old_h;
 uint32_t startime = 0;
 bool timer_active = false, querry_temp = false, error = false;
+uint32_t sensor_error_start = 0;
+bool sensor_error_alarm_active = false;
 unsigned long stabilityStartTime = 0;
 bool stabilityCheck = false;
 float last_temp_for_rate = 0.0;
@@ -781,6 +784,8 @@ void read_temp()
         if (!error)
         { // Seulement à la première détection d'erreur
           error = true;
+          sensor_error_start = millis();
+          sensor_error_alarm_active = false;
           pwm_before_sensor_error = pwm;
           pwm = 0;
           static char err[] = "Err"; // Tableau de caractères modifiable
@@ -792,6 +797,8 @@ void read_temp()
               if (error)
         { // Si on sort d'une erreur
           error = false;
+          sensor_error_alarm_active = false;
+          buzz.off();
                 pwm = pwm_before_sensor_error;
           resetSensor(); // Réinitialise une fois que le capteur est reconnu
           displayTemp(temperature);
@@ -1407,6 +1414,12 @@ void buttonstate()
   encbutton_state = 0;
   float elapsed = millis() - buttontick;
   buzz.update();
+  if (error && !sensor_error_alarm_active &&
+      millis() - sensor_error_start >= SENSOR_ERROR_BEEP_DELAY_MS)
+  {
+    buzz.pattern(3, SPEED_FAST, true);
+    sensor_error_alarm_active = true;
+  }
   if (click_prev && !state)
   {
     // detect fall
